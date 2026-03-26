@@ -34,6 +34,7 @@ export default function App() {
   const [imgSize, setImgSize]             = useState(null)
   const [dragging, setDragging]           = useState(false)
   const [sidebarOpen, setSidebarOpen]     = useState(window.innerWidth > 768)
+  const [sliderPos, setSliderPos]         = useState(50)
   const fileInputRef = useRef()
   const debounceRef  = useRef()
 
@@ -305,25 +306,44 @@ export default function App() {
           ) : (
             // Before / After view
             <div style={{ animation: 'fadeIn 0.4s ease' }}>
-              <div className="preview-grid" style={{ marginBottom:16 }}>
-                {/* Original */}
-                <div>
-                  <div style={{ fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--gold-dark)', marginBottom: 8, textAlign: 'center' }}>
-                    Original
-                  </div>
-                  <img 
-                    src={originalUrl} 
-                    alt="original"
-                    style={{
-                      width: '100%',
-                      maxHeight: '70vh',
-                      objectFit: 'contain',
-                      borderRadius: 6,
-                      display: 'block',
-                      border: '0.5px solid var(--border)'
-                    }} 
-                  />
-                </div>
+             <div className="compare-container" style={{ marginBottom:16 }}>
+
+              {/* Edited image (background) */}
+              <img
+                src={resultUrl || originalUrl}
+                alt="edited"
+                style={{
+                  width:'100%',
+                  display:'block',
+                  borderRadius:6
+                }}
+              />
+            
+              {/* Original image overlay */}
+              <img
+                src={originalUrl}
+                alt="original"
+                style={{
+                  position:'absolute',
+                  top:0,
+                  left:0,
+                  width:`${sliderPos}%`,
+                  height:'100%',
+                  objectFit:'cover'
+                }}
+              />
+            
+              {/* Slider */}
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={sliderPos}
+                onChange={(e)=>setSliderPos(e.target.value)}
+                className="compare-slider"
+              />
+            
+            </div>
 
                 {/* Result */}
                 <div>
