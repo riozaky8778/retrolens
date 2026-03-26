@@ -306,9 +306,9 @@ export default function App() {
           ) : (
             // Before / After view
             <div style={{ animation: 'fadeIn 0.4s ease' }}>
-          
+
               <div className="compare-container" style={{ marginBottom:16 }}>
-          
+            
                 {/* Edited image */}
                 <img
                   src={resultUrl || originalUrl}
@@ -319,7 +319,7 @@ export default function App() {
                     borderRadius:6
                   }}
                 />
-          
+            
                 {/* Original overlay */}
                 <img
                   src={originalUrl}
@@ -333,7 +333,7 @@ export default function App() {
                     objectFit:'cover'
                   }}
                 />
-          
+            
                 {/* Slider */}
                 <input
                   type="range"
@@ -343,12 +343,31 @@ export default function App() {
                   onChange={(e)=>setSliderPos(e.target.value)}
                   className="compare-slider"
                 />
-          
+            
               </div>
-          
+            
+              {/* Info bar */}
+              {resultUrl && !loading && (
+                <div style={{
+                  padding:'10px 14px',
+                  background:'var(--bg2)',
+                  border:'0.5px solid var(--border)',
+                  borderRadius:6,
+                  display:'flex',
+                  alignItems:'center',
+                  justifyContent:'space-between'
+                }}>
+                  <span style={{fontSize:12,color:'var(--gold-dark)'}}>
+                    {imgSize && `📐 ${imgSize.w} × ${imgSize.h}px · `}JPEG Q97 · Resolusi penuh
+                  </span>
+            
+                  <span style={{fontSize:12,color:'var(--gold)'}}>
+                    {activePreset?.label}
+                  </span>
+                </div>
+              )}
+            
             </div>
-          
-          )}
 
                 {/* Result */}
                 <div>
