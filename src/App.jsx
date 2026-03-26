@@ -191,8 +191,12 @@ export default function App() {
 
         {/* Topbar */}
         <header style={{
-          display: 'flex', alignItems: 'center', gap: 12,
-          padding: '0 24px', height: 52,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          flexWrap: 'wrap',
+          padding: '0 24px',
+          minHeight: 52,
           borderBottom: '0.5px solid var(--border)',
           background: 'var(--bg2)',
           flexShrink: 0,
