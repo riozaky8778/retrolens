@@ -301,7 +301,7 @@ export default function App() {
           ) : (
             // Before / After view
             <div style={{ animation: 'fadeIn 0.4s ease' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: window.innerWidth < 768 ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 16 }}>
                 {/* Original */}
                 <div>
                   <div style={{ fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--gold-dark)', marginBottom: 8, textAlign: 'center' }}>
