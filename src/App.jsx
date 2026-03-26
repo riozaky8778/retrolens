@@ -305,10 +305,10 @@ export default function App() {
             </div>
           ) : (
             // Before / After view
-           <div style={{ animation: 'fadeIn 0.4s ease' }}>
-
+            <div style={{ animation: 'fadeIn 0.4s ease' }}>
+          
               <div className="compare-container" style={{ marginBottom:16 }}>
-            
+          
                 {/* Edited image */}
                 <img
                   src={resultUrl || originalUrl}
@@ -319,7 +319,7 @@ export default function App() {
                     borderRadius:6
                   }}
                 />
-            
+          
                 {/* Original overlay */}
                 <img
                   src={originalUrl}
@@ -333,8 +333,8 @@ export default function App() {
                     objectFit:'cover'
                   }}
                 />
-            
-                {/* Slider control */}
+          
+                {/* Slider */}
                 <input
                   type="range"
                   min="0"
@@ -343,10 +343,12 @@ export default function App() {
                   onChange={(e)=>setSliderPos(e.target.value)}
                   className="compare-slider"
                 />
-            
+          
               </div>
-            
+          
             </div>
+          
+          )}
 
                 {/* Result */}
                 <div>
