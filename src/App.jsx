@@ -305,49 +305,78 @@ export default function App() {
             </div>
           ) : (
            // Before / After view
-          <div style={{ animation: 'fadeIn 0.4s ease' }}>
-          
-            <div className="compare-container" style={{ marginBottom:16 }}>
-          
-              {/* Edited image */}
+        <div style={{ animation: 'fadeIn 0.4s ease', marginBottom:16 }}>
+
+          <div
+            className="compare-container"
+            style={{
+              position:'relative',
+              width:'100%',
+              maxHeight:'70vh',
+              aspectRatio:'3/4',
+              overflow:'hidden',
+              borderRadius:6
+            }}
+          >
+        
+            {/* ORIGINAL */}
             <img
-              src={resultUrl || originalUrl}
-              alt="edited"
-              style={{
-                width:'100%',
-                maxHeight:'70vh',
-                objectFit:'contain',
-                display:'block',
-                borderRadius:6
-              }}
-            />
-          
-              {/* Original overlay */}
-             <img
               src={originalUrl}
               alt="original"
               style={{
                 position:'absolute',
-                top:0,
-                left:0,
-                width:`${sliderPos}%`,
+                inset:0,
+                width:'100%',
                 height:'100%',
-                maxHeight:'70vh',
-                objectFit:'contain'
+                objectFit:'cover'
               }}
             />
-          
-              {/* Slider */}
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={sliderPos}
-                onChange={(e)=>setSliderPos(e.target.value)}
-                className="compare-slider"
-              />
-          
-            </div>
+        
+            {/* COLOR GRADED */}
+            <img
+              src={resultUrl || originalUrl}
+              alt="graded"
+              style={{
+                position:'absolute',
+                inset:0,
+                width:'100%',
+                height:'100%',
+                objectFit:'cover',
+                clipPath:`inset(0 ${100-sliderPos}% 0 0)`
+              }}
+            />
+        
+            {/* DIVIDER LINE */}
+            <div
+              style={{
+                position:'absolute',
+                top:0,
+                bottom:0,
+                left:`${sliderPos}%`,
+                width:2,
+                background:'var(--gold)',
+                transform:'translateX(-50%)'
+              }}
+            />
+        
+            {/* DRAG AREA */}
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={sliderPos}
+              onChange={(e)=>setSliderPos(e.target.value)}
+              style={{
+                position:'absolute',
+                inset:0,
+                opacity:0,
+                cursor:'ew-resize'
+              }}
+            />
+        
+          </div>
+        
+        </div>
           
             {/* Info bar */}
             {resultUrl && !loading && (
