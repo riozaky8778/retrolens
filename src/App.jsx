@@ -21,6 +21,8 @@ const SLIDERS = [
   { key: 'vignette',   label: 'Vignette',   min: 0,    max: 100 },
 ]
 
+const isMobile = () => window.innerWidth <= 768
+
 export default function App() {
   const [originalFile, setOriginalFile] = useState(null)
   const [originalUrl, setOriginalUrl]   = useState(null)
@@ -31,10 +33,12 @@ export default function App() {
   const [loading, setLoading]           = useState(false)
   const [imgSize, setImgSize]           = useState(null)
   const [dragging, setDragging]         = useState(false)
-  const [sidebarOpen, setSidebarOpen]   = useState(true)
+  const [sidebarOpen, setSidebarOpen]   = useState(!isMobile())
   const [sliderPos, setSliderPos]       = useState(50)
   const fileInputRef = useRef()
   const debounceRef  = useRef()
+  const containerRef = useRef()
+  const draggingSlider = useRef(false)
 
   const handleFile = (file) => {
     if (!file) return
@@ -42,6 +46,7 @@ export default function App() {
     setOriginalUrl(URL.createObjectURL(file))
     setResultUrl(null)
     setResultBlob(null)
+    if (isMobile()) setSidebarOpen(false)
   }
 
   const applyGrade = useCallback(async (file, presetId, fineParams) => {
@@ -52,14 +57,11 @@ export default function App() {
       fd.append('file', file)
       fd.append('preset_id', presetId)
       Object.entries(fineParams).forEach(([k, v]) => fd.append(k, v))
-
       const res = await fetch(`${API_URL}/grade`, { method: 'POST', body: fd })
       if (!res.ok) throw new Error('Server error')
-
       const w = res.headers.get('X-Image-Width')
       const h = res.headers.get('X-Image-Height')
       if (w && h) setImgSize({ w, h })
-
       const blob = await res.blob()
       setResultBlob(blob)
       setResultUrl(prev => { if (prev) URL.revokeObjectURL(prev); return URL.createObjectURL(blob) })
@@ -76,6 +78,30 @@ export default function App() {
     debounceRef.current = setTimeout(() => applyGrade(originalFile, preset, fine), 400)
     return () => clearTimeout(debounceRef.current)
   }, [originalFile, preset, fine, applyGrade])
+
+  // Touch/mouse drag handler untuk slider
+  const getSliderPos = (clientX) => {
+    const rect = containerRef.current?.getBoundingClientRect()
+    if (!rect) return
+    const pos = ((clientX - rect.left) / rect.width) * 100
+    setSliderPos(Math.min(100, Math.max(0, pos)))
+  }
+
+  const onMouseDown = (e) => { draggingSlider.current = true; getSliderPos(e.clientX) }
+  const onMouseMove = (e) => { if (draggingSlider.current) getSliderPos(e.clientX) }
+  const onMouseUp   = () => { draggingSlider.current = false }
+  const onTouchStart = (e) => { draggingSlider.current = true; getSliderPos(e.touches[0].clientX) }
+  const onTouchMove  = (e) => { if (draggingSlider.current) { e.preventDefault(); getSliderPos(e.touches[0].clientX) } }
+  const onTouchEnd   = () => { draggingSlider.current = false }
+
+  useEffect(() => {
+    window.addEventListener('mouseup', onMouseUp)
+    window.addEventListener('mousemove', onMouseMove)
+    return () => {
+      window.removeEventListener('mouseup', onMouseUp)
+      window.removeEventListener('mousemove', onMouseMove)
+    }
+  }, [])
 
   const handleDrop = (e) => {
     e.preventDefault()
@@ -95,40 +121,42 @@ export default function App() {
   const activePreset = PRESETS.find(p => p.id === preset)
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', position: 'relative' }}>
+
+      {/* Overlay untuk mobile saat sidebar terbuka */}
+      {sidebarOpen && isMobile() && (
+        <div onClick={() => setSidebarOpen(false)} style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 10,
+        }} />
+      )}
 
       {/* SIDEBAR */}
       <aside style={{
-        width: sidebarOpen ? 260 : 0,
-        minWidth: sidebarOpen ? 260 : 0,
-        display: sidebarOpen ? 'flex' : 'none',
+        width: 260,
+        position: isMobile() ? 'fixed' : 'relative',
+        left: sidebarOpen ? 0 : -260,
+        top: 0, bottom: 0,
+        zIndex: 20,
+        display: 'flex',
         flexDirection: 'column',
         background: 'var(--bg2)',
         borderRight: '0.5px solid var(--border)',
-        overflow: 'hidden',
-        transition: 'width 0.3s ease',
+        transition: 'left 0.3s ease',
+        flexShrink: 0,
       }}>
         <div style={{ padding: '24px 20px', overflowY: 'auto', flex: 1 }}>
-
           <div style={{ marginBottom: 24 }}>
-            <div style={{ fontFamily: 'Special Elite, cursive', fontSize: 22, color: 'var(--gold)', marginBottom: 2 }}>
-              RetroLens
-            </div>
-            <div style={{ fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--gold-dark)' }}>
-              Cinematic Grading
-            </div>
+            <div style={{ fontFamily: 'Special Elite, cursive', fontSize: 22, color: 'var(--gold)', marginBottom: 2 }}>RetroLens</div>
+            <div style={{ fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--gold-dark)' }}>Cinematic Grading</div>
           </div>
 
           <FilmStrip />
           <div style={{ height: 1, background: 'var(--border)', margin: '16px 0' }} />
 
-          <div style={{ fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--gold-dim)', marginBottom: 10 }}>
-            Preset
-          </div>
+          <div style={{ fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--gold-dim)', marginBottom: 10 }}>Preset</div>
           {PRESETS.map(p => (
-            <button key={p.id} onClick={() => setPreset(p.id)} style={{
-              width: '100%', textAlign: 'left', padding: '10px 12px',
-              marginBottom: 6, borderRadius: 6, cursor: 'pointer',
+            <button key={p.id} onClick={() => { setPreset(p.id); if (isMobile()) setSidebarOpen(false) }} style={{
+              width: '100%', textAlign: 'left', padding: '10px 12px', marginBottom: 6, borderRadius: 6, cursor: 'pointer',
               border: preset === p.id ? '0.5px solid rgba(201,169,122,0.5)' : '0.5px solid var(--border)',
               background: preset === p.id ? 'rgba(201,169,122,0.1)' : 'transparent',
               color: preset === p.id ? 'var(--gold)' : 'var(--text-dim)',
@@ -141,14 +169,12 @@ export default function App() {
 
           <div style={{ height: 1, background: 'var(--border)', margin: '16px 0' }} />
 
-          <div style={{ fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--gold-dim)', marginBottom: 14 }}>
-            Fine Tuning
-          </div>
+          <div style={{ fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--gold-dim)', marginBottom: 14 }}>Fine Tuning</div>
           {SLIDERS.map(s => (
             <div key={s.key} style={{ marginBottom: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                <span style={{ fontSize: 12, color: 'var(--gold)', letterSpacing: '0.04em' }}>{s.label}</span>
-                <span style={{ fontSize: 11, color: fine[s.key] !== 0 ? 'var(--gold)' : 'var(--gold-dark)', fontVariantNumeric: 'tabular-nums' }}>
+                <span style={{ fontSize: 12, color: 'var(--gold)' }}>{s.label}</span>
+                <span style={{ fontSize: 11, color: fine[s.key] !== 0 ? 'var(--gold)' : 'var(--gold-dark)' }}>
                   {fine[s.key] > 0 ? '+' : ''}{fine[s.key]}
                 </span>
               </div>
@@ -163,9 +189,7 @@ export default function App() {
               background: 'transparent', border: '0.5px solid var(--border)',
               color: 'var(--gold-dim)', borderRadius: 4, cursor: 'pointer',
               fontSize: 12, fontFamily: 'DM Sans, sans-serif',
-            }}>
-              Reset Fine Tuning
-            </button>
+            }}>Reset Fine Tuning</button>
           )}
 
           <div style={{ height: 1, background: 'var(--border)', margin: '20px 0 12px' }} />
@@ -174,66 +198,59 @@ export default function App() {
       </aside>
 
       {/* MAIN */}
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg)' }}>
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg)', minWidth: 0 }}>
 
         {/* Topbar */}
         <header style={{
-          display: 'flex', alignItems: 'center', gap: 12,
-          padding: '0 24px', height: 52,
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: '0 12px', height: 52,
           borderBottom: '0.5px solid var(--border)',
           background: 'var(--bg2)', flexShrink: 0,
         }}>
           <button onClick={() => setSidebarOpen(o => !o)} style={{
             background: 'none', border: 'none', cursor: 'pointer',
-            color: 'var(--gold-dim)', padding: 4, fontSize: 16,
-          }}>
-            ☰
-          </button>
+            color: 'var(--gold-dim)', padding: 4, fontSize: 18, lineHeight: 1,
+          }}>☰</button>
 
-          <span style={{ fontFamily: 'Special Elite, cursive', color: 'var(--gold)', fontSize: 16 }}>RetroLens</span>
+          <span style={{ fontFamily: 'Special Elite, cursive', color: 'var(--gold)', fontSize: 16, whiteSpace: 'nowrap' }}>RetroLens</span>
 
-          {originalFile && (
-            <span style={{ fontSize: 12, color: 'var(--gold-dark)' }}>· {originalFile.name}</span>
-          )}
-
-          <div style={{ flex: 1 }} />
+          <div style={{ flex: 1, minWidth: 0 }} />
 
           {loading && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--gold-dim)', fontSize: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--gold-dim)', fontSize: 12, whiteSpace: 'nowrap' }}>
               <div style={{
                 width: 12, height: 12, border: '1.5px solid var(--gold-dim)',
                 borderTopColor: 'var(--gold)', borderRadius: '50%',
-                animation: 'spin 0.7s linear infinite',
+                animation: 'spin 0.7s linear infinite', flexShrink: 0,
               }} />
-              Applying grade...
+              <span style={{ display: isMobile() ? 'none' : 'inline' }}>Processing...</span>
             </div>
           )}
 
           {resultUrl && !loading && (
             <button onClick={handleDownload} style={{
               background: 'transparent', border: '0.5px solid rgba(201,169,122,0.4)',
-              color: 'var(--gold)', padding: '6px 16px', borderRadius: 4, cursor: 'pointer',
-              fontSize: 12, fontFamily: 'DM Sans, sans-serif',
-              display: 'flex', alignItems: 'center', gap: 6,
+              color: 'var(--gold)', padding: '6px 12px', borderRadius: 4, cursor: 'pointer',
+              fontSize: 12, fontFamily: 'DM Sans, sans-serif', whiteSpace: 'nowrap',
+              display: 'flex', alignItems: 'center', gap: 4,
             }}>
-              ⬇ Download
-              {imgSize && <span style={{ color: 'var(--gold-dark)', fontSize: 11 }}>· {imgSize.w}×{imgSize.h}px</span>}
+              ⬇ <span>Download</span>
             </button>
           )}
 
           <button onClick={() => fileInputRef.current?.click()} style={{
             background: 'var(--gold)', color: 'var(--bg)', border: 'none',
-            padding: '6px 16px', borderRadius: 4, cursor: 'pointer',
-            fontSize: 12, fontWeight: 500, fontFamily: 'DM Sans, sans-serif',
+            padding: '6px 12px', borderRadius: 4, cursor: 'pointer',
+            fontSize: 12, fontWeight: 500, fontFamily: 'DM Sans, sans-serif', whiteSpace: 'nowrap',
           }}>
-            Upload Foto
+            Upload
           </button>
           <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }}
             onChange={e => handleFile(e.target.files[0])} />
         </header>
 
         {/* Content */}
-        <div style={{ flex: 1, overflow: 'auto', padding: 24 }}>
+        <div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
           {!originalUrl ? (
             <div
               onDragOver={e => { e.preventDefault(); setDragging(true) }}
@@ -242,7 +259,7 @@ export default function App() {
               onClick={() => fileInputRef.current?.click()}
               style={{
                 border: `0.5px dashed ${dragging ? 'var(--gold)' : 'rgba(201,169,122,0.25)'}`,
-                borderRadius: 10, height: '60vh',
+                borderRadius: 10, height: '70vh',
                 display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center',
                 cursor: 'pointer', transition: 'all 0.2s',
@@ -250,7 +267,7 @@ export default function App() {
               }}
             >
               <div style={{ fontSize: 48, marginBottom: 16 }}>🎞️</div>
-              <div style={{ color: 'var(--gold)', fontFamily: 'Special Elite, cursive', fontSize: 18, marginBottom: 8 }}>
+              <div style={{ color: 'var(--gold)', fontFamily: 'Special Elite, cursive', fontSize: 18, marginBottom: 8, textAlign: 'center' }}>
                 Drop foto kamu di sini
               </div>
               <div style={{ color: 'var(--gold-dark)', fontSize: 12 }}>
@@ -261,34 +278,54 @@ export default function App() {
             <div style={{ animation: 'fadeIn 0.4s ease' }}>
 
               {/* Slider comparison */}
-              <div style={{
-                position: 'relative', width: '100%', maxWidth: 900,
-                margin: '0 auto 16px', borderRadius: 6, overflow: 'hidden',
-                height: '75vh',
-              }}>
+              <div
+                ref={containerRef}
+                onMouseDown={onMouseDown}
+                onTouchStart={onTouchStart}
+                onTouchMove={onTouchMove}
+                onTouchEnd={onTouchEnd}
+                style={{
+                  position: 'relative', width: '100%', maxWidth: 900,
+                  margin: '0 auto 16px', borderRadius: 6, overflow: 'hidden',
+                  height: '70vh', cursor: 'ew-resize', userSelect: 'none',
+                  touchAction: 'none',
+                }}
+              >
                 <img src={originalUrl} alt="original" style={{
                   position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain',
+                  pointerEvents: 'none',
                 }} />
                 <img src={resultUrl || originalUrl} alt="graded" style={{
                   position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain',
                   clipPath: `inset(0 0 0 ${sliderPos}%)`,
+                  pointerEvents: 'none',
                 }} />
+                {/* Divider line */}
                 <div style={{
                   position: 'absolute', top: 0, bottom: 0,
                   left: `${sliderPos}%`, width: 2,
                   background: 'var(--gold)', transform: 'translateX(-50%)',
                   pointerEvents: 'none',
-                }} />
-                <div style={{ position: 'absolute', top: 10, left: 12, fontSize: 11, letterSpacing: '0.1em', color: 'rgba(232,213,183,0.7)', textTransform: 'uppercase' }}>Original</div>
-                <div style={{ position: 'absolute', top: 10, right: 12, fontSize: 11, letterSpacing: '0.1em', color: 'var(--gold)', textTransform: 'uppercase' }}>{activePreset?.label}</div>
-                <input type="range" min="0" max="100" value={sliderPos}
-                  onChange={e => setSliderPos(e.target.value)}
-                  style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'ew-resize', width: '100%', height: '100%' }}
-                />
+                }}>
+                  {/* Handle */}
+                  <div style={{
+                    position: 'absolute', top: '50%', left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    width: 32, height: 32, borderRadius: '50%',
+                    background: 'var(--gold)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 14, color: 'var(--bg)', fontWeight: 'bold',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+                  }}>⇔</div>
+                </div>
+                <div style={{ position: 'absolute', top: 10, left: 12, fontSize: 11, letterSpacing: '0.1em', color: 'rgba(232,213,183,0.7)', textTransform: 'uppercase', pointerEvents: 'none' }}>Original</div>
+                <div style={{ position: 'absolute', top: 10, right: 12, fontSize: 11, letterSpacing: '0.1em', color: 'var(--gold)', textTransform: 'uppercase', pointerEvents: 'none' }}>{activePreset?.label}</div>
+
                 {loading && (
                   <div style={{
-                    position: 'absolute', inset: 0, background: 'rgba(15,12,7,0.6)',
+                    position: 'absolute', inset: 0, background: 'rgba(15,12,7,0.7)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 10,
+                    pointerEvents: 'none',
                   }}>
                     <div style={{
                       width: 32, height: 32, border: '2px solid rgba(201,169,122,0.3)',
@@ -306,10 +343,10 @@ export default function App() {
                   padding: '10px 14px', background: 'var(--bg2)',
                   border: '0.5px solid var(--border)', borderRadius: 6,
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  maxWidth: 900, margin: '0 auto',
+                  maxWidth: 900, margin: '0 auto', flexWrap: 'wrap', gap: 4,
                 }}>
                   <span style={{ fontSize: 12, color: 'var(--gold-dark)' }}>
-                    {imgSize && `📐 ${imgSize.w} × ${imgSize.h}px · `}JPEG Q97 · Resolusi penuh
+                    {imgSize && `📐 ${imgSize.w}×${imgSize.h}px · `}JPEG Q97
                   </span>
                   <span style={{ fontSize: 12, color: 'var(--gold)' }}>{activePreset?.label}</span>
                 </div>
