@@ -304,123 +304,70 @@ export default function App() {
               </div>
             </div>
           ) : (
-            // Before / After view
-            <div style={{ animation: 'fadeIn 0.4s ease' }}>
-
-              <div className="compare-container" style={{ marginBottom:16 }}>
-            
-                {/* Edited image */}
-                <img
-                  src={resultUrl || originalUrl}
-                  alt="edited"
-                  style={{
-                    width:'100%',
-                    display:'block',
-                    borderRadius:6
-                  }}
-                />
-            
-                {/* Original overlay */}
-                <img
-                  src={originalUrl}
-                  alt="original"
-                  style={{
-                    position:'absolute',
-                    top:0,
-                    left:0,
-                    width:`${sliderPos}%`,
-                    height:'100%',
-                    objectFit:'cover'
-                  }}
-                />
-            
-                {/* Slider */}
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={sliderPos}
-                  onChange={(e)=>setSliderPos(e.target.value)}
-                  className="compare-slider"
-                />
-            
-              </div>
-            
-              {/* Info bar */}
-              {resultUrl && !loading && (
-                <div style={{
-                  padding:'10px 14px',
-                  background:'var(--bg2)',
-                  border:'0.5px solid var(--border)',
-                  borderRadius:6,
-                  display:'flex',
-                  alignItems:'center',
-                  justifyContent:'space-between'
-                }}>
-                  <span style={{fontSize:12,color:'var(--gold-dark)'}}>
-                    {imgSize && `📐 ${imgSize.w} × ${imgSize.h}px · `}JPEG Q97 · Resolusi penuh
-                  </span>
-            
-                  <span style={{fontSize:12,color:'var(--gold)'}}>
-                    {activePreset?.label}
-                  </span>
-                </div>
-              )}
-            
+           // Before / After view
+          <div style={{ animation: 'fadeIn 0.4s ease' }}>
+          
+            <div className="compare-container" style={{ marginBottom:16 }}>
+          
+              {/* Edited image */}
+              <img
+                src={resultUrl || originalUrl}
+                alt="edited"
+                style={{
+                  width:'100%',
+                  display:'block',
+                  borderRadius:6
+                }}
+              />
+          
+              {/* Original overlay */}
+              <img
+                src={originalUrl}
+                alt="original"
+                style={{
+                  position:'absolute',
+                  top:0,
+                  left:0,
+                  width:`${sliderPos}%`,
+                  height:'100%',
+                  objectFit:'cover'
+                }}
+              />
+          
+              {/* Slider */}
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={sliderPos}
+                onChange={(e)=>setSliderPos(e.target.value)}
+                className="compare-slider"
+              />
+          
             </div>
-
-                {/* Result */}
-                <div>
-                  <div style={{ fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--gold)', marginBottom: 8, textAlign: 'center' }}>
-                    {activePreset?.label}
-                  </div>
-                  <div style={{ position: 'relative', borderRadius: 6, overflow: 'hidden', border: '0.5px solid rgba(201,169,122,0.3)' }}>
-                    {resultUrl ? (
-                      <img src={resultUrl}style={{width:'100%',maxHeight:'70vh',objectFit:'contain',display:'block'}}/>
-                    ) : (
-                      <img src={originalUrl} alt="preview" style={{ width: '100%', display: 'block', filter: 'brightness(0.5)' }} />
-                    )}
-                    {loading && (
-                      <div style={{
-                        position: 'absolute', inset: 0,
-                        background: 'rgba(15,12,7,0.6)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        flexDirection: 'column', gap: 10,
-                      }}>
-                        <div style={{
-                          width: 32, height: 32,
-                          border: '2px solid rgba(201,169,122,0.3)',
-                          borderTopColor: 'var(--gold)',
-                          borderRadius: '50%',
-                          animation: 'spin 0.7s linear infinite',
-                        }} />
-                        <div style={{ color: 'var(--gold)', fontSize: 12, letterSpacing: '0.1em' }}>Processing...</div>
-                      </div>
-                    )}
-                  </div>
-                </div>
+          
+            {/* Info bar */}
+            {resultUrl && !loading && (
+              <div style={{
+                padding:'10px 14px',
+                background:'var(--bg2)',
+                border:'0.5px solid var(--border)',
+                borderRadius:6,
+                display:'flex',
+                alignItems:'center',
+                justifyContent:'space-between'
+              }}>
+                <span style={{fontSize:12,color:'var(--gold-dark)'}}>
+                  {imgSize && `📐 ${imgSize.w} × ${imgSize.h}px · `}JPEG Q97 · Resolusi penuh
+                </span>
+          
+                <span style={{fontSize:12,color:'var(--gold)'}}>
+                  {activePreset?.label}
+                </span>
               </div>
-
-              {/* Info bar */}
-              {resultUrl && !loading && (
-                <div style={{
-                  padding: '10px 14px',
-                  background: 'var(--bg2)',
-                  border: '0.5px solid var(--border)',
-                  borderRadius: 6,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}>
-                  <span style={{ fontSize: 12, color: 'var(--gold-dark)' }}>
-                    {imgSize && `📐 ${imgSize.w} × ${imgSize.h}px · `}JPEG Q97 · Resolusi penuh
-                  </span>
-                  <span style={{ fontSize: 12, color: 'var(--gold)' }}>
-                    {activePreset?.label}
-                  </span>
-                </div>
-              )}
-            </div>
+            )}
+          
+          </div>
           )}
         </div>
       </main>
