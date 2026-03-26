@@ -307,11 +307,18 @@ export default function App() {
                   <div style={{ fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--gold-dark)', marginBottom: 8, textAlign: 'center' }}>
                     Original
                   </div>
-                  <img src={originalUrl} alt="original" style={{
-                    width: '100%', borderRadius: 6,
-                    display: 'block',
-                    border: '0.5px solid var(--border)',
-                  }} />
+                  <img 
+                    src={originalUrl} 
+                    alt="original"
+                    style={{
+                      width: '100%',
+                      maxHeight: '70vh',
+                      objectFit: 'contain',
+                      borderRadius: 6,
+                      display: 'block',
+                      border: '0.5px solid var(--border)'
+                    }} 
+                  />
                 </div>
 
                 {/* Result */}
@@ -321,7 +328,7 @@ export default function App() {
                   </div>
                   <div style={{ position: 'relative', borderRadius: 6, overflow: 'hidden', border: '0.5px solid rgba(201,169,122,0.3)' }}>
                     {resultUrl ? (
-                      <img src={resultUrl} alt="result" style={{ width: '100%', display: 'block' }} />
+                      <img src={resultUrl}style={{width:'100%',maxHeight:'70vh',objectFit:'contain',display:'block'}}/>
                     ) : (
                       <img src={originalUrl} alt="preview" style={{ width: '100%', display: 'block', filter: 'brightness(0.5)' }} />
                     )}
