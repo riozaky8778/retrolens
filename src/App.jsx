@@ -33,7 +33,7 @@ export default function App() {
   const [loading, setLoading]             = useState(false)
   const [imgSize, setImgSize]             = useState(null)
   const [dragging, setDragging]           = useState(false)
-  const [sidebarOpen, setSidebarOpen]     = useState(true)
+  const [sidebarOpen, setSidebarOpen]     = useState(window.innerWidth > 768)
   const fileInputRef = useRef()
   const debounceRef  = useRef()
 
@@ -102,13 +102,13 @@ export default function App() {
       {/* ── SIDEBAR ── */}
       <aside style={{
         width: sidebarOpen ? 260 : 0,
-        minWidth: sidebarOpen ? 260 : 0,
+        position: window.innerWidth < 768 ? 'fixed' : 'relative',
+        left: 0,
+        top: 0,
+        height: '100vh',
+        zIndex: 1000,
         background: 'var(--bg2)',
-        borderRight: '0.5px solid var(--border)',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-        transition: 'width 0.3s ease, min-width 0.3s ease',
+        transition: 'width 0.3s ease'
       }}>
         <div style={{ padding: '24px 20px', overflowY: 'auto', flex: 1 }}>
 
