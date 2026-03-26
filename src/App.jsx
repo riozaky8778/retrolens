@@ -21,23 +21,43 @@ const SLIDERS = [
   { key: 'vignette',   label: 'Vignette',   min: 0,    max: 100 },
 ]
 
+// Preset base CSS filter approximation
+const PRESET_CSS = {
+  'cinematic-green': { brightness: 0.97, contrast: 1.25, saturate: 0.82, hueRotate: -8, sepia: 0.08 },
+  'edwak-445':       { brightness: 0.98, contrast: 1.20, saturate: 0.84, hueRotate: -5, sepia: 0.06 },
+  'flomo-green':     { brightness: 1.02, contrast: 1.15, saturate: 0.75, hueRotate: -12, sepia: 0.05 },
+  'muted-street':    { brightness: 1.03, contrast: 1.12, saturate: 0.50, hueRotate: 0, sepia: 0.10 },
+  'edwak-440':       { brightness: 0.97, contrast: 1.22, saturate: 0.87, hueRotate: -6, sepia: 0.07 },
+}
+
+// Hitung CSS filter dari preset + fine tuning
+const buildCSSFilter = (presetId, fine) => {
+  const base = PRESET_CSS[presetId] || PRESET_CSS['cinematic-green']
+  const brightness = base.brightness + (fine.exposure / 100) * 0.4
+  const contrast   = base.contrast   + (fine.contrast  / 100) * 0.4
+  const saturate   = Math.max(0, base.saturate + (fine.saturation / 100) * 0.5)
+  const hueRotate  = base.hueRotate  + (fine.warm / 100) * 15
+  const sepia      = Math.min(1, base.sepia + (fine.fade / 100) * 0.3)
+  return `brightness(${brightness}) contrast(${contrast}) saturate(${saturate}) hue-rotate(${hueRotate}deg) sepia(${sepia})`
+}
+
 const isMobile = () => window.innerWidth <= 768
 
 export default function App() {
   const [originalFile, setOriginalFile] = useState(null)
   const [originalUrl, setOriginalUrl]   = useState(null)
-  const [resultUrl, setResultUrl]       = useState(null)
+  const [resultUrl, setResultUrl]       = useState(null)   // hasil Python (download quality)
   const [resultBlob, setResultBlob]     = useState(null)
   const [preset, setPreset]             = useState('cinematic-green')
   const [fine, setFine]                 = useState(DEFAULT_FINE)
-  const [loading, setLoading]           = useState(false)
+  const [processing, setProcessing]     = useState(false)  // processing untuk download
   const [imgSize, setImgSize]           = useState(null)
   const [dragging, setDragging]         = useState(false)
   const [sidebarOpen, setSidebarOpen]   = useState(!isMobile())
   const [sliderPos, setSliderPos]       = useState(50)
-  const fileInputRef = useRef()
-  const debounceRef  = useRef()
-  const containerRef = useRef()
+  const [previewMode, setPreviewMode]   = useState(true)   // true = CSS preview, false = hasil Python
+  const fileInputRef   = useRef()
+  const containerRef   = useRef()
   const draggingSlider = useRef(false)
 
   const handleFile = (file) => {
@@ -46,53 +66,67 @@ export default function App() {
     setOriginalUrl(URL.createObjectURL(file))
     setResultUrl(null)
     setResultBlob(null)
+    setPreviewMode(true)
     if (isMobile()) setSidebarOpen(false)
   }
 
-  const applyGrade = useCallback(async (file, presetId, fineParams) => {
-    if (!file) return
-    setLoading(true)
+  // Kalau preset atau fine tuning berubah, kembali ke preview mode
+  useEffect(() => {
+    if (resultUrl) {
+      setPreviewMode(true)
+      setResultUrl(null)
+      setResultBlob(null)
+    }
+  }, [preset, fine])
+
+  // Process ke Python hanya saat Download diklik
+  const processAndDownload = useCallback(async () => {
+    if (!originalFile) return
+    setProcessing(true)
     try {
       const fd = new FormData()
-      fd.append('file', file)
-      fd.append('preset_id', presetId)
-      Object.entries(fineParams).forEach(([k, v]) => fd.append(k, v))
+      fd.append('file', originalFile)
+      fd.append('preset_id', preset)
+      Object.entries(fine).forEach(([k, v]) => fd.append(k, v))
+
       const res = await fetch(`${API_URL}/grade`, { method: 'POST', body: fd })
       if (!res.ok) throw new Error('Server error')
+
       const w = res.headers.get('X-Image-Width')
       const h = res.headers.get('X-Image-Height')
       if (w && h) setImgSize({ w, h })
+
       const blob = await res.blob()
       setResultBlob(blob)
-      setResultUrl(prev => { if (prev) URL.revokeObjectURL(prev); return URL.createObjectURL(blob) })
+      setResultUrl(URL.createObjectURL(blob))
+      setPreviewMode(false)
+
+      // Langsung download
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = `retrolens_${preset}.jpg`
+      a.click()
     } catch (err) {
       console.error(err)
+      alert('Gagal memproses gambar. Coba lagi!')
     } finally {
-      setLoading(false)
+      setProcessing(false)
     }
-  }, [])
+  }, [originalFile, preset, fine])
 
-  useEffect(() => {
-    if (!originalFile) return
-    clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => applyGrade(originalFile, preset, fine), 400)
-    return () => clearTimeout(debounceRef.current)
-  }, [originalFile, preset, fine, applyGrade])
-
-  // Touch/mouse drag handler untuk slider
+  // Touch/mouse drag untuk slider before/after
   const getSliderPos = (clientX) => {
     const rect = containerRef.current?.getBoundingClientRect()
     if (!rect) return
     const pos = ((clientX - rect.left) / rect.width) * 100
     setSliderPos(Math.min(100, Math.max(0, pos)))
   }
-
-  const onMouseDown = (e) => { draggingSlider.current = true; getSliderPos(e.clientX) }
-  const onMouseMove = (e) => { if (draggingSlider.current) getSliderPos(e.clientX) }
-  const onMouseUp   = () => { draggingSlider.current = false }
+  const onMouseDown  = (e) => { draggingSlider.current = true; getSliderPos(e.clientX) }
+  const onMouseMove  = (e) => { if (draggingSlider.current) getSliderPos(e.clientX) }
+  const onMouseUp    = ()  => { draggingSlider.current = false }
   const onTouchStart = (e) => { draggingSlider.current = true; getSliderPos(e.touches[0].clientX) }
   const onTouchMove  = (e) => { if (draggingSlider.current) { e.preventDefault(); getSliderPos(e.touches[0].clientX) } }
-  const onTouchEnd   = () => { draggingSlider.current = false }
+  const onTouchEnd   = ()  => { draggingSlider.current = false }
 
   useEffect(() => {
     window.addEventListener('mouseup', onMouseUp)
@@ -110,20 +144,13 @@ export default function App() {
     if (file && file.type.startsWith('image/')) handleFile(file)
   }
 
-  const handleDownload = () => {
-    if (!resultBlob) return
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(resultBlob)
-    a.download = `retrolens_${preset}.jpg`
-    a.click()
-  }
-
-  const activePreset = PRESETS.find(p => p.id === preset)
+  const activePreset  = PRESETS.find(p => p.id === preset)
+  const cssFilter     = buildCSSFilter(preset, fine)
+  const displayedUrl  = previewMode ? originalUrl : (resultUrl || originalUrl)
 
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', position: 'relative' }}>
 
-      {/* Overlay untuk mobile saat sidebar terbuka */}
       {sidebarOpen && isMobile() && (
         <div onClick={() => setSidebarOpen(false)} style={{
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 10,
@@ -135,14 +162,11 @@ export default function App() {
         width: 260,
         position: isMobile() ? 'fixed' : 'relative',
         left: sidebarOpen ? 0 : -260,
-        top: 0, bottom: 0,
-        zIndex: 20,
-        display: 'flex',
-        flexDirection: 'column',
+        top: 0, bottom: 0, zIndex: 20,
+        display: 'flex', flexDirection: 'column',
         background: 'var(--bg2)',
         borderRight: '0.5px solid var(--border)',
-        transition: 'left 0.3s ease',
-        flexShrink: 0,
+        transition: 'left 0.3s ease', flexShrink: 0,
       }}>
         <div style={{ padding: '24px 20px', overflowY: 'auto', flex: 1 }}>
           <div style={{ marginBottom: 24 }}>
@@ -214,34 +238,48 @@ export default function App() {
 
           <span style={{ fontFamily: 'Special Elite, cursive', color: 'var(--gold)', fontSize: 16, whiteSpace: 'nowrap' }}>RetroLens</span>
 
-          <div style={{ flex: 1, minWidth: 0 }} />
+          <div style={{ flex: 1 }} />
 
-          {loading && (
+          {/* Preview badge */}
+          {originalUrl && previewMode && (
+            <div style={{
+              fontSize: 11, color: 'var(--gold-dark)',
+              border: '0.5px solid var(--border)',
+              padding: '3px 8px', borderRadius: 4,
+              whiteSpace: 'nowrap',
+            }}>
+              ✦ Preview
+            </div>
+          )}
+
+          {processing && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--gold-dim)', fontSize: 12, whiteSpace: 'nowrap' }}>
               <div style={{
                 width: 12, height: 12, border: '1.5px solid var(--gold-dim)',
                 borderTopColor: 'var(--gold)', borderRadius: '50%',
                 animation: 'spin 0.7s linear infinite', flexShrink: 0,
               }} />
-              <span style={{ display: isMobile() ? 'none' : 'inline' }}>Processing...</span>
+              Processing...
             </div>
           )}
 
-          {resultUrl && !loading && (
-            <button onClick={handleDownload} style={{
-              background: 'transparent', border: '0.5px solid rgba(201,169,122,0.4)',
-              color: 'var(--gold)', padding: '6px 12px', borderRadius: 4, cursor: 'pointer',
-              fontSize: 12, fontFamily: 'DM Sans, sans-serif', whiteSpace: 'nowrap',
-              display: 'flex', alignItems: 'center', gap: 4,
+          {/* Download button — trigger process */}
+          {originalUrl && !processing && (
+            <button onClick={processAndDownload} style={{
+              background: 'var(--gold)', color: 'var(--bg)', border: 'none',
+              padding: '6px 14px', borderRadius: 4, cursor: 'pointer',
+              fontSize: 12, fontWeight: 500, fontFamily: 'DM Sans, sans-serif',
+              whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 6,
             }}>
-              ⬇ <span>Download</span>
+              ⬇ Download
             </button>
           )}
 
           <button onClick={() => fileInputRef.current?.click()} style={{
-            background: 'var(--gold)', color: 'var(--bg)', border: 'none',
+            background: 'transparent', color: 'var(--gold)',
+            border: '0.5px solid rgba(201,169,122,0.4)',
             padding: '6px 12px', borderRadius: 4, cursor: 'pointer',
-            fontSize: 12, fontWeight: 500, fontFamily: 'DM Sans, sans-serif', whiteSpace: 'nowrap',
+            fontSize: 12, fontFamily: 'DM Sans, sans-serif', whiteSpace: 'nowrap',
           }}>
             Upload
           </button>
@@ -288,26 +326,45 @@ export default function App() {
                   position: 'relative', width: '100%', maxWidth: 900,
                   margin: '0 auto 16px', borderRadius: 6, overflow: 'hidden',
                   height: '70vh', cursor: 'ew-resize', userSelect: 'none',
-                  touchAction: 'none',
+                  touchAction: 'none', background: 'var(--bg3)',
                 }}
               >
+                {/* ORIGINAL */}
                 <img src={originalUrl} alt="original" style={{
-                  position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain',
-                  pointerEvents: 'none',
+                  position: 'absolute', inset: 0, width: '100%', height: '100%',
+                  objectFit: 'contain', pointerEvents: 'none',
                 }} />
-                <img src={resultUrl || originalUrl} alt="graded" style={{
-                  position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain',
-                  clipPath: `inset(0 0 0 ${sliderPos}%)`,
-                  pointerEvents: 'none',
-                }} />
-                {/* Divider line */}
+
+                {/* GRADED — CSS preview atau hasil Python */}
+                <img
+                  src={previewMode ? originalUrl : (resultUrl || originalUrl)}
+                  alt="graded"
+                  style={{
+                    position: 'absolute', inset: 0, width: '100%', height: '100%',
+                    objectFit: 'contain',
+                    filter: previewMode ? cssFilter : 'none',
+                    clipPath: `inset(0 0 0 ${sliderPos}%)`,
+                    pointerEvents: 'none',
+                  }}
+                />
+
+                {/* Vignette overlay (preview mode) */}
+                {previewMode && fine.vignette > 0 && (
+                  <div style={{
+                    position: 'absolute', inset: 0,
+                    clipPath: `inset(0 0 0 ${sliderPos}%)`,
+                    background: `radial-gradient(ellipse at center, transparent ${60 - fine.vignette * 0.3}%, rgba(0,0,0,${fine.vignette / 120}) 100%)`,
+                    pointerEvents: 'none',
+                  }} />
+                )}
+
+                {/* Divider */}
                 <div style={{
                   position: 'absolute', top: 0, bottom: 0,
                   left: `${sliderPos}%`, width: 2,
                   background: 'var(--gold)', transform: 'translateX(-50%)',
                   pointerEvents: 'none',
                 }}>
-                  {/* Handle */}
                   <div style={{
                     position: 'absolute', top: '50%', left: '50%',
                     transform: 'translate(-50%, -50%)',
@@ -318,10 +375,14 @@ export default function App() {
                     boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
                   }}>⇔</div>
                 </div>
-                <div style={{ position: 'absolute', top: 10, left: 12, fontSize: 11, letterSpacing: '0.1em', color: 'rgba(232,213,183,0.7)', textTransform: 'uppercase', pointerEvents: 'none' }}>Original</div>
-                <div style={{ position: 'absolute', top: 10, right: 12, fontSize: 11, letterSpacing: '0.1em', color: 'var(--gold)', textTransform: 'uppercase', pointerEvents: 'none' }}>{activePreset?.label}</div>
 
-                {loading && (
+                {/* Labels */}
+                <div style={{ position: 'absolute', top: 10, left: 12, fontSize: 11, letterSpacing: '0.1em', color: 'rgba(232,213,183,0.7)', textTransform: 'uppercase', pointerEvents: 'none' }}>Original</div>
+                <div style={{ position: 'absolute', top: 10, right: 12, fontSize: 11, letterSpacing: '0.1em', color: 'var(--gold)', textTransform: 'uppercase', pointerEvents: 'none' }}>
+                  {activePreset?.label} {previewMode ? '(preview)' : ''}
+                </div>
+
+                {processing && (
                   <div style={{
                     position: 'absolute', inset: 0, background: 'rgba(15,12,7,0.7)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 10,
@@ -332,25 +393,26 @@ export default function App() {
                       borderTopColor: 'var(--gold)', borderRadius: '50%',
                       animation: 'spin 0.7s linear infinite',
                     }} />
-                    <div style={{ color: 'var(--gold)', fontSize: 12, letterSpacing: '0.1em' }}>Processing...</div>
+                    <div style={{ color: 'var(--gold)', fontSize: 12, letterSpacing: '0.1em' }}>Rendering full quality...</div>
                   </div>
                 )}
               </div>
 
               {/* Info bar */}
-              {resultUrl && !loading && (
-                <div style={{
-                  padding: '10px 14px', background: 'var(--bg2)',
-                  border: '0.5px solid var(--border)', borderRadius: 6,
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  maxWidth: 900, margin: '0 auto', flexWrap: 'wrap', gap: 4,
-                }}>
-                  <span style={{ fontSize: 12, color: 'var(--gold-dark)' }}>
-                    {imgSize && `📐 ${imgSize.w}×${imgSize.h}px · `}JPEG Q97
-                  </span>
-                  <span style={{ fontSize: 12, color: 'var(--gold)' }}>{activePreset?.label}</span>
-                </div>
-              )}
+              <div style={{
+                padding: '10px 14px', background: 'var(--bg2)',
+                border: '0.5px solid var(--border)', borderRadius: 6,
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                maxWidth: 900, margin: '0 auto', flexWrap: 'wrap', gap: 4,
+              }}>
+                <span style={{ fontSize: 12, color: 'var(--gold-dark)' }}>
+                  {previewMode
+                    ? '✦ Preview mode — klik Download untuk render full quality'
+                    : `📐 ${imgSize?.w}×${imgSize?.h}px · JPEG Q97 · Resolusi penuh`
+                  }
+                </span>
+                <span style={{ fontSize: 12, color: 'var(--gold)' }}>{activePreset?.label}</span>
+              </div>
             </div>
           )}
         </div>
