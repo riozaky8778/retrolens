@@ -305,14 +305,14 @@ export default function App() {
             </div>
           ) : (
            // Before / After view
-        <div style={{ animation: 'fadeIn 0.4s ease', marginBottom:16 }}>
+        <div style={{ animation:'fadeIn 0.4s ease', marginBottom:16 }}>
 
           <div
-            className="compare-container"
             style={{
               position:'relative',
               width:'100%',
-              maxHeight:'70vh',
+              maxWidth:'900px',
+              margin:'0 auto',
               aspectRatio:'3/4',
               overflow:'hidden',
               borderRadius:6
@@ -346,7 +346,7 @@ export default function App() {
               }}
             />
         
-            {/* DIVIDER LINE */}
+            {/* DIVIDER */}
             <div
               style={{
                 position:'absolute',
@@ -359,7 +359,7 @@ export default function App() {
               }}
             />
         
-            {/* DRAG AREA */}
+            {/* DRAG CONTROL */}
             <input
               type="range"
               min="0"
