@@ -310,29 +310,32 @@ export default function App() {
             <div className="compare-container" style={{ marginBottom:16 }}>
           
               {/* Edited image */}
-              <img
-                src={resultUrl || originalUrl}
-                alt="edited"
-                style={{
-                  width:'100%',
-                  display:'block',
-                  borderRadius:6
-                }}
-              />
+            <img
+              src={resultUrl || originalUrl}
+              alt="edited"
+              style={{
+                width:'100%',
+                maxHeight:'70vh',
+                objectFit:'contain',
+                display:'block',
+                borderRadius:6
+              }}
+            />
           
               {/* Original overlay */}
-              <img
-                src={originalUrl}
-                alt="original"
-                style={{
-                  position:'absolute',
-                  top:0,
-                  left:0,
-                  width:`${sliderPos}%`,
-                  height:'100%',
-                  objectFit:'cover'
-                }}
-              />
+             <img
+              src={originalUrl}
+              alt="original"
+              style={{
+                position:'absolute',
+                top:0,
+                left:0,
+                width:`${sliderPos}%`,
+                height:'100%',
+                maxHeight:'70vh',
+                objectFit:'contain'
+              }}
+            />
           
               {/* Slider */}
               <input
