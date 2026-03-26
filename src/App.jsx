@@ -101,15 +101,15 @@ export default function App() {
 
       {/* ── SIDEBAR ── */}
       <aside style={{
-        width: sidebarOpen ? 260 : 0,
-        position: window.innerWidth < 768 ? 'fixed' : 'relative',
-        left: 0,
-        top: 0,
-        height: '100vh',
-        zIndex: 1000,
-        background: 'var(--bg2)',
-        transition: 'width 0.3s ease'
-      }}>
+          width: sidebarOpen ? 260 : 0,
+          minWidth: sidebarOpen ? 260 : 0,
+          display: sidebarOpen ? 'flex' : 'none',
+          flexDirection: 'column',
+          background: 'var(--bg2)',
+          borderRight: '0.5px solid var(--border)',
+          overflow: 'hidden',
+          transition: 'width 0.3s ease',
+        }}>
         <div style={{ padding: '24px 20px', overflowY: 'auto', flex: 1 }}>
 
           {/* Logo */}
