@@ -264,8 +264,7 @@ export default function App() {
               <div style={{
                 position: 'relative', width: '100%', maxWidth: 900,
                 margin: '0 auto 16px', borderRadius: 6, overflow: 'hidden',
-                aspectRatio: 'unset',
-                maxHeight: '75vh',
+                height: '75vh',
               }}>
                 <img src={originalUrl} alt="original" style={{
                   position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover',
