@@ -271,7 +271,7 @@ export default function App() {
                 }} />
                 <img src={resultUrl || originalUrl} alt="graded" style={{
                   position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover',
-                  clipPath: `inset(0 ${100 - sliderPos}% 0 0)`,
+                  clipPath: `inset(0 0 0 ${sliderPos}%)`,
                 }} />
                 <div style={{
                   position: 'absolute', top: 0, bottom: 0,
