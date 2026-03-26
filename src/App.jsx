@@ -267,10 +267,10 @@ export default function App() {
                 height: '75vh',
               }}>
                 <img src={originalUrl} alt="original" style={{
-                  position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover',
+                  position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain',
                 }} />
                 <img src={resultUrl || originalUrl} alt="graded" style={{
-                  position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover',
+                  position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain',
                   clipPath: `inset(0 0 0 ${sliderPos}%)`,
                 }} />
                 <div style={{
