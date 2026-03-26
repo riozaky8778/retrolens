@@ -1,7 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 
-// Ganti dengan URL backend Railway kamu setelah deploy
-// Untuk development lokal: http://localhost:8000
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 const PRESETS = [
@@ -24,17 +22,17 @@ const SLIDERS = [
 ]
 
 export default function App() {
-  const [originalFile, setOriginalFile]   = useState(null)
-  const [originalUrl, setOriginalUrl]     = useState(null)
-  const [resultUrl, setResultUrl]         = useState(null)
-  const [resultBlob, setResultBlob]       = useState(null)
-  const [preset, setPreset]               = useState('cinematic-green')
-  const [fine, setFine]                   = useState(DEFAULT_FINE)
-  const [loading, setLoading]             = useState(false)
-  const [imgSize, setImgSize]             = useState(null)
-  const [dragging, setDragging]           = useState(false)
-  const [sidebarOpen, setSidebarOpen]     = useState(window.innerWidth > 768)
-  const [sliderPos, setSliderPos]         = useState(50)
+  const [originalFile, setOriginalFile] = useState(null)
+  const [originalUrl, setOriginalUrl]   = useState(null)
+  const [resultUrl, setResultUrl]       = useState(null)
+  const [resultBlob, setResultBlob]     = useState(null)
+  const [preset, setPreset]             = useState('cinematic-green')
+  const [fine, setFine]                 = useState(DEFAULT_FINE)
+  const [loading, setLoading]           = useState(false)
+  const [imgSize, setImgSize]           = useState(null)
+  const [dragging, setDragging]         = useState(false)
+  const [sidebarOpen, setSidebarOpen]   = useState(true)
+  const [sliderPos, setSliderPos]       = useState(50)
   const fileInputRef = useRef()
   const debounceRef  = useRef()
 
@@ -72,7 +70,6 @@ export default function App() {
     }
   }, [])
 
-  // Auto-apply dengan debounce saat preset/slider berubah
   useEffect(() => {
     if (!originalFile) return
     clearTimeout(debounceRef.current)
@@ -100,20 +97,19 @@ export default function App() {
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
 
-      {/* ── SIDEBAR ── */}
+      {/* SIDEBAR */}
       <aside style={{
-          width: sidebarOpen ? 260 : 0,
-          minWidth: sidebarOpen ? 260 : 0,
-          display: sidebarOpen ? 'flex' : 'none',
-          flexDirection: 'column',
-          background: 'var(--bg2)',
-          borderRight: '0.5px solid var(--border)',
-          overflow: 'hidden',
-          transition: 'width 0.3s ease',
-        }}>
+        width: sidebarOpen ? 260 : 0,
+        minWidth: sidebarOpen ? 260 : 0,
+        display: sidebarOpen ? 'flex' : 'none',
+        flexDirection: 'column',
+        background: 'var(--bg2)',
+        borderRight: '0.5px solid var(--border)',
+        overflow: 'hidden',
+        transition: 'width 0.3s ease',
+      }}>
         <div style={{ padding: '24px 20px', overflowY: 'auto', flex: 1 }}>
 
-          {/* Logo */}
           <div style={{ marginBottom: 24 }}>
             <div style={{ fontFamily: 'Special Elite, cursive', fontSize: 22, color: 'var(--gold)', marginBottom: 2 }}>
               RetroLens
@@ -123,12 +119,9 @@ export default function App() {
             </div>
           </div>
 
-          {/* Filmstrip deco */}
           <FilmStrip />
-
           <div style={{ height: 1, background: 'var(--border)', margin: '16px 0' }} />
 
-          {/* Presets */}
           <div style={{ fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--gold-dim)', marginBottom: 10 }}>
             Preset
           </div>
@@ -139,8 +132,7 @@ export default function App() {
               border: preset === p.id ? '0.5px solid rgba(201,169,122,0.5)' : '0.5px solid var(--border)',
               background: preset === p.id ? 'rgba(201,169,122,0.1)' : 'transparent',
               color: preset === p.id ? 'var(--gold)' : 'var(--text-dim)',
-              transition: 'all 0.15s',
-              fontFamily: 'DM Sans, sans-serif',
+              transition: 'all 0.15s', fontFamily: 'DM Sans, sans-serif',
             }}>
               <div style={{ fontSize: 13, fontWeight: 500 }}>{p.label}</div>
               <div style={{ fontSize: 11, color: 'var(--gold-dark)', marginTop: 2, lineHeight: 1.4 }}>{p.desc}</div>
@@ -149,7 +141,6 @@ export default function App() {
 
           <div style={{ height: 1, background: 'var(--border)', margin: '16px 0' }} />
 
-          {/* Fine tuning */}
           <div style={{ fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--gold-dim)', marginBottom: 14 }}>
             Fine Tuning
           </div>
@@ -166,18 +157,13 @@ export default function App() {
             </div>
           ))}
 
-          {/* Reset fine tuning */}
           {Object.values(fine).some(v => v !== 0) && (
             <button onClick={() => setFine(DEFAULT_FINE)} style={{
               width: '100%', padding: '7px', marginTop: 4,
               background: 'transparent', border: '0.5px solid var(--border)',
               color: 'var(--gold-dim)', borderRadius: 4, cursor: 'pointer',
               fontSize: 12, fontFamily: 'DM Sans, sans-serif',
-              transition: 'all 0.15s',
-            }}
-              onMouseEnter={e => e.target.style.borderColor = 'var(--gold)'}
-              onMouseLeave={e => e.target.style.borderColor = 'var(--border)'}
-            >
+            }}>
               Reset Fine Tuning
             </button>
           )}
@@ -187,43 +173,31 @@ export default function App() {
         </div>
       </aside>
 
-      {/* ── MAIN ── */}
+      {/* MAIN */}
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg)' }}>
 
         {/* Topbar */}
         <header style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          flexWrap: 'wrap',
-          padding: '0 24px',
-          minHeight: 52,
+          display: 'flex', alignItems: 'center', gap: 12,
+          padding: '0 24px', height: 52,
           borderBottom: '0.5px solid var(--border)',
-          background: 'var(--bg2)',
-          flexShrink: 0,
+          background: 'var(--bg2)', flexShrink: 0,
         }}>
           <button onClick={() => setSidebarOpen(o => !o)} style={{
             background: 'none', border: 'none', cursor: 'pointer',
-            color: 'var(--gold-dim)', padding: 4, borderRadius: 4,
-            fontSize: 16, transition: 'color 0.15s',
-          }}
-            onMouseEnter={e => e.target.style.color = 'var(--gold)'}
-            onMouseLeave={e => e.target.style.color = 'var(--gold-dim)'}
-          >
+            color: 'var(--gold-dim)', padding: 4, fontSize: 16,
+          }}>
             ☰
           </button>
 
           <span style={{ fontFamily: 'Special Elite, cursive', color: 'var(--gold)', fontSize: 16 }}>RetroLens</span>
 
           {originalFile && (
-            <span style={{ fontSize: 12, color: 'var(--gold-dark)', marginLeft: 4 }}>
-              · {originalFile.name}
-            </span>
+            <span style={{ fontSize: 12, color: 'var(--gold-dark)' }}>· {originalFile.name}</span>
           )}
 
           <div style={{ flex: 1 }} />
 
-          {/* Status */}
           {loading && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--gold-dim)', fontSize: 12 }}>
               <div style={{
@@ -235,47 +209,32 @@ export default function App() {
             </div>
           )}
 
-          {/* Download */}
           {resultUrl && !loading && (
             <button onClick={handleDownload} style={{
-              background: 'transparent',
-              border: '0.5px solid rgba(201,169,122,0.4)',
-              color: 'var(--gold)', padding: '6px 16px',
-              borderRadius: 4, cursor: 'pointer',
+              background: 'transparent', border: '0.5px solid rgba(201,169,122,0.4)',
+              color: 'var(--gold)', padding: '6px 16px', borderRadius: 4, cursor: 'pointer',
               fontSize: 12, fontFamily: 'DM Sans, sans-serif',
               display: 'flex', alignItems: 'center', gap: 6,
-              transition: 'all 0.15s',
-            }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(201,169,122,0.1)'; e.currentTarget.style.borderColor = 'var(--gold)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(201,169,122,0.4)' }}
-            >
+            }}>
               ⬇ Download
               {imgSize && <span style={{ color: 'var(--gold-dark)', fontSize: 11 }}>· {imgSize.w}×{imgSize.h}px</span>}
             </button>
           )}
 
-          {/* Upload button */}
           <button onClick={() => fileInputRef.current?.click()} style={{
-            background: 'var(--gold)', color: 'var(--bg)',
-            border: 'none', padding: '6px 16px',
-            borderRadius: 4, cursor: 'pointer',
-            fontSize: 12, fontWeight: 500,
-            fontFamily: 'DM Sans, sans-serif',
-            transition: 'background 0.15s',
-          }}
-            onMouseEnter={e => e.target.style.background = 'var(--gold-light)'}
-            onMouseLeave={e => e.target.style.background = 'var(--gold)'}
-          >
+            background: 'var(--gold)', color: 'var(--bg)', border: 'none',
+            padding: '6px 16px', borderRadius: 4, cursor: 'pointer',
+            fontSize: 12, fontWeight: 500, fontFamily: 'DM Sans, sans-serif',
+          }}>
             Upload Foto
           </button>
           <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }}
             onChange={e => handleFile(e.target.files[0])} />
         </header>
 
-        {/* Content area */}
+        {/* Content */}
         <div style={{ flex: 1, overflow: 'auto', padding: 24 }}>
           {!originalUrl ? (
-            // Drop zone
             <div
               onDragOver={e => { e.preventDefault(); setDragging(true) }}
               onDragLeave={() => setDragging(false)}
@@ -283,16 +242,11 @@ export default function App() {
               onClick={() => fileInputRef.current?.click()}
               style={{
                 border: `0.5px dashed ${dragging ? 'var(--gold)' : 'rgba(201,169,122,0.25)'}`,
-                borderRadius: 10,
-                height: '60vh',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
+                borderRadius: 10, height: '60vh',
+                display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', transition: 'all 0.2s',
                 background: dragging ? 'rgba(201,169,122,0.04)' : 'transparent',
-                animation: 'fadeIn 0.4s ease',
               }}
             >
               <div style={{ fontSize: 48, marginBottom: 16 }}>🎞️</div>
@@ -304,102 +258,63 @@ export default function App() {
               </div>
             </div>
           ) : (
-           // Before / After view
-        <div style={{ animation:'fadeIn 0.4s ease', marginBottom:16 }}>
+            <div style={{ animation: 'fadeIn 0.4s ease' }}>
 
-          <div
-            style={{
-              position:'relative',
-              width:'100%',
-              maxWidth:'900px',
-              margin:'0 auto',
-              aspectRatio:'3/4',
-              overflow:'hidden',
-              borderRadius:6
-            }}
-          >
-        
-            {/* ORIGINAL */}
-            <img
-              src={originalUrl}
-              alt="original"
-              style={{
-                position:'absolute',
-                inset:0,
-                width:'100%',
-                height:'100%',
-                objectFit:'cover'
-              }}
-            />
-        
-            {/* COLOR GRADED */}
-            <img
-              src={resultUrl || originalUrl}
-              alt="graded"
-              style={{
-                position:'absolute',
-                inset:0,
-                width:'100%',
-                height:'100%',
-                objectFit:'cover',
-                clipPath:`inset(0 ${100-sliderPos}% 0 0)`
-              }}
-            />
-        
-            {/* DIVIDER */}
-            <div
-              style={{
-                position:'absolute',
-                top:0,
-                bottom:0,
-                left:`${sliderPos}%`,
-                width:2,
-                background:'var(--gold)',
-                transform:'translateX(-50%)'
-              }}
-            />
-        
-            {/* DRAG CONTROL */}
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={sliderPos}
-              onChange={(e)=>setSliderPos(e.target.value)}
-              style={{
-                position:'absolute',
-                inset:0,
-                opacity:0,
-                cursor:'ew-resize'
-              }}
-            />
-        
-          </div>
-        
-        </div>
-          
-            {/* Info bar */}
-            {resultUrl && !loading && (
+              {/* Slider comparison */}
               <div style={{
-                padding:'10px 14px',
-                background:'var(--bg2)',
-                border:'0.5px solid var(--border)',
-                borderRadius:6,
-                display:'flex',
-                alignItems:'center',
-                justifyContent:'space-between'
+                position: 'relative', width: '100%', maxWidth: 900,
+                margin: '0 auto 16px', borderRadius: 6, overflow: 'hidden',
+                aspectRatio: '3/2',
               }}>
-                <span style={{fontSize:12,color:'var(--gold-dark)'}}>
-                  {imgSize && `📐 ${imgSize.w} × ${imgSize.h}px · `}JPEG Q97 · Resolusi penuh
-                </span>
-          
-                <span style={{fontSize:12,color:'var(--gold)'}}>
-                  {activePreset?.label}
-                </span>
+                <img src={originalUrl} alt="original" style={{
+                  position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover',
+                }} />
+                <img src={resultUrl || originalUrl} alt="graded" style={{
+                  position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover',
+                  clipPath: `inset(0 ${100 - sliderPos}% 0 0)`,
+                }} />
+                <div style={{
+                  position: 'absolute', top: 0, bottom: 0,
+                  left: `${sliderPos}%`, width: 2,
+                  background: 'var(--gold)', transform: 'translateX(-50%)',
+                  pointerEvents: 'none',
+                }} />
+                <div style={{ position: 'absolute', top: 10, left: 12, fontSize: 11, letterSpacing: '0.1em', color: 'rgba(232,213,183,0.7)', textTransform: 'uppercase' }}>Original</div>
+                <div style={{ position: 'absolute', top: 10, right: 12, fontSize: 11, letterSpacing: '0.1em', color: 'var(--gold)', textTransform: 'uppercase' }}>{activePreset?.label}</div>
+                <input type="range" min="0" max="100" value={sliderPos}
+                  onChange={e => setSliderPos(e.target.value)}
+                  style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'ew-resize', width: '100%', height: '100%' }}
+                />
+                {loading && (
+                  <div style={{
+                    position: 'absolute', inset: 0, background: 'rgba(15,12,7,0.6)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 10,
+                  }}>
+                    <div style={{
+                      width: 32, height: 32, border: '2px solid rgba(201,169,122,0.3)',
+                      borderTopColor: 'var(--gold)', borderRadius: '50%',
+                      animation: 'spin 0.7s linear infinite',
+                    }} />
+                    <div style={{ color: 'var(--gold)', fontSize: 12, letterSpacing: '0.1em' }}>Processing...</div>
+                  </div>
+                )}
               </div>
-            )}
-          
-          </div>
+
+              {/* Info bar */}
+              {resultUrl && !loading && (
+                <div style={{
+                  padding: '10px 14px', background: 'var(--bg2)',
+                  border: '0.5px solid var(--border)', borderRadius: 6,
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  maxWidth: 900, margin: '0 auto',
+                }}>
+                  <span style={{ fontSize: 12, color: 'var(--gold-dark)' }}>
+                    {imgSize && `📐 ${imgSize.w} × ${imgSize.h}px · `}JPEG Q97 · Resolusi penuh
+                  </span>
+                  <span style={{ fontSize: 12, color: 'var(--gold)' }}>{activePreset?.label}</span>
+                </div>
+              )}
+            </div>
           )}
         </div>
       </main>
