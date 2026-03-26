@@ -83,3 +83,22 @@ img{
   max-width:1200px;
   margin:auto;
 }
+
+.compare-container{
+  position:relative;
+  width:100%;
+  overflow:hidden;
+}
+
+.compare-container img{
+  width:100%;
+  display:block;
+}
+
+.compare-slider{
+  position:absolute;
+  bottom:12px;
+  left:50%;
+  transform:translateX(-50%);
+  width:80%;
+}
