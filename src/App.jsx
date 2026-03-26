@@ -305,43 +305,46 @@ export default function App() {
             </div>
           ) : (
             // Before / After view
-            <div style={{ animation: 'fadeIn 0.4s ease' }}>
-             <div className="compare-container" style={{ marginBottom:16 }}>
+           <div style={{ animation: 'fadeIn 0.4s ease' }}>
 
-              {/* Edited image (background) */}
-              <img
-                src={resultUrl || originalUrl}
-                alt="edited"
-                style={{
-                  width:'100%',
-                  display:'block',
-                  borderRadius:6
-                }}
-              />
+              <div className="compare-container" style={{ marginBottom:16 }}>
             
-              {/* Original image overlay */}
-              <img
-                src={originalUrl}
-                alt="original"
-                style={{
-                  position:'absolute',
-                  top:0,
-                  left:0,
-                  width:`${sliderPos}%`,
-                  height:'100%',
-                  objectFit:'cover'
-                }}
-              />
+                {/* Edited image */}
+                <img
+                  src={resultUrl || originalUrl}
+                  alt="edited"
+                  style={{
+                    width:'100%',
+                    display:'block',
+                    borderRadius:6
+                  }}
+                />
             
-              {/* Slider */}
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={sliderPos}
-                onChange={(e)=>setSliderPos(e.target.value)}
-                className="compare-slider"
-              />
+                {/* Original overlay */}
+                <img
+                  src={originalUrl}
+                  alt="original"
+                  style={{
+                    position:'absolute',
+                    top:0,
+                    left:0,
+                    width:`${sliderPos}%`,
+                    height:'100%',
+                    objectFit:'cover'
+                  }}
+                />
+            
+                {/* Slider control */}
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={sliderPos}
+                  onChange={(e)=>setSliderPos(e.target.value)}
+                  className="compare-slider"
+                />
+            
+              </div>
             
             </div>
 
