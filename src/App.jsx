@@ -415,13 +415,22 @@ export default function App() {
             </div>
           )}
 
-          {previewUrl && !previewLoading && !downloadLoading && (
-            <button onClick={handleDownload} style={{
-              background: 'var(--gold)', color: 'var(--bg)', border: 'none',
-              padding: '6px 16px', borderRadius: 4, cursor: 'pointer',
-              fontSize: 12, fontWeight: 500, fontFamily: 'DM Sans, sans-serif', whiteSpace: 'nowrap',
-            }}>⬇ Download</button>
-          )}
+        {previewUrl && !previewLoading && !downloadLoading && (
+          <button onClick={handleDownload} style={{
+            background: 'var(--gold)', color: 'var(--bg)', border: 'none',
+            padding: '6px 16px', borderRadius: 4, cursor: 'pointer',
+            fontSize: 12, fontWeight: 500, fontFamily: 'DM Sans, sans-serif', whiteSpace: 'nowrap',
+          }}>⬇ Download</button>
+        )}
+        
+        <button onClick={() => fileInputRef.current?.click()} style={{
+          background: 'transparent', color: 'var(--gold)',
+          border: '0.5px solid rgba(201,169,122,0.4)',
+          padding: '6px 10px', borderRadius: 4, cursor: 'pointer',
+          fontSize: 12, fontFamily: 'DM Sans, sans-serif', whiteSpace: 'nowrap',
+        }}>
+          {originalUrl ? '↑' : 'Upload'}
+        </button>
 
           {downloadLoading && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--gold)', fontSize: 12 }}>
