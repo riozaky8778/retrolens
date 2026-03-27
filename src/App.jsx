@@ -23,37 +23,62 @@ const SLIDERS = [
 
 const isMobile = () => window.innerWidth <= 768
 
-// Resize gambar jadi kecil untuk preview
-const resizeForPreview = (file, maxSize = 400) => {
+// Resize gambar untuk preview
+const resizeForPreview = (file, maxSize = 500) => {
   return new Promise((resolve) => {
     const img = new Image()
     img.onload = () => {
       const scale = Math.min(maxSize / img.width, maxSize / img.height, 1)
-      const w = Math.round(img.width * scale)
-      const h = Math.round(img.height * scale)
       const canvas = document.createElement('canvas')
-      canvas.width = w
-      canvas.height = h
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h)
+      canvas.width  = Math.round(img.width  * scale)
+      canvas.height = Math.round(img.height * scale)
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
       canvas.toBlob(resolve, 'image/jpeg', 0.85)
     }
     img.src = URL.createObjectURL(file)
   })
 }
 
+// Rotate file gambar (canvas) — returns new File
+const rotateImage = (file, rotation) => {
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.onload = () => {
+      const rad = (rotation * Math.PI) / 180
+      const sin = Math.abs(Math.sin(rad))
+      const cos = Math.abs(Math.cos(rad))
+      const w = Math.round(img.width * cos + img.height * sin)
+      const h = Math.round(img.width * sin + img.height * cos)
+      const canvas = document.createElement('canvas')
+      canvas.width  = w
+      canvas.height = h
+      const ctx = canvas.getContext('2d')
+      ctx.translate(w / 2, h / 2)
+      ctx.rotate(rad)
+      ctx.drawImage(img, -img.width / 2, -img.height / 2)
+      canvas.toBlob(blob => resolve(new File([blob], file.name, { type: 'image/jpeg' })), 'image/jpeg', 0.97)
+    }
+    img.src = URL.createObjectURL(file)
+  })
+}
+
 export default function App() {
-  const [originalFile, setOriginalFile]   = useState(null)
-  const [originalUrl, setOriginalUrl]     = useState(null)
-  const [previewUrl, setPreviewUrl]       = useState(null)   // hasil Python resolusi kecil
-  const [resultBlob, setResultBlob]       = useState(null)   // hasil Python resolusi penuh
-  const [preset, setPreset]               = useState(null)   // null = belum pilih preset
-  const [fine, setFine]                   = useState(DEFAULT_FINE)
-  const [previewLoading, setPreviewLoading] = useState(false)
+  const [originalFile, setOriginalFile]       = useState(null)
+  const [originalUrl, setOriginalUrl]         = useState(null)
+  const [rotatedFile, setRotatedFile]         = useState(null)  // file setelah rotate
+  const [rotatedUrl, setRotatedUrl]           = useState(null)
+  const [rotation, setRotation]               = useState(0)     // 0, 90, 180, 270
+  const [previewUrl, setPreviewUrl]           = useState(null)
+  const [resultBlob, setResultBlob]           = useState(null)
+  const [preset, setPreset]                   = useState(null)
+  const [fine, setFine]                       = useState(DEFAULT_FINE)
+  const [previewLoading, setPreviewLoading]   = useState(false)
   const [downloadLoading, setDownloadLoading] = useState(false)
-  const [imgSize, setImgSize]             = useState(null)
-  const [dragging, setDragging]           = useState(false)
-  const [sidebarOpen, setSidebarOpen]     = useState(!isMobile())
-  const [sliderPos, setSliderPos]         = useState(50)
+  const [rotating, setRotating]               = useState(false)
+  const [imgSize, setImgSize]                 = useState(null)
+  const [dragging, setDragging]               = useState(false)
+  const [sidebarOpen, setSidebarOpen]         = useState(!isMobile())
+  const [sliderPos, setSliderPos]             = useState(50)
   const fileInputRef   = useRef()
   const containerRef   = useRef()
   const draggingSlider = useRef(false)
@@ -63,14 +88,38 @@ export default function App() {
     if (!file) return
     setOriginalFile(file)
     setOriginalUrl(URL.createObjectURL(file))
+    setRotatedFile(file)
+    setRotatedUrl(URL.createObjectURL(file))
+    setRotation(0)
     setPreviewUrl(null)
     setResultBlob(null)
-    setPreset(null)   // reset preset — pengguna harus pilih dulu
+    setPreset(null)
     setFine(DEFAULT_FINE)
-    if (isMobile()) setSidebarOpen(true) // buka sidebar biar pilih preset
+    if (isMobile()) setSidebarOpen(true)
   }
 
-  // Proses preview (resolusi kecil) ke Python
+  // Handle rotate — putar 90 derajat searah jarum jam
+  const handleRotate = async () => {
+    if (!originalFile || rotating) return
+    setRotating(true)
+    const newRotation = (rotation + 90) % 360
+    setRotation(newRotation)
+    try {
+      const newFile = await rotateImage(originalFile, newRotation)
+      setRotatedFile(newFile)
+      setRotatedUrl(prev => { if (prev && prev !== originalUrl) URL.revokeObjectURL(prev); return URL.createObjectURL(newFile) })
+      setPreviewUrl(null)
+      setResultBlob(null)
+      // Re-trigger preview kalau preset sudah dipilih
+      if (preset) {
+        clearTimeout(debounceRef.current)
+        debounceRef.current = setTimeout(() => applyPreview(newFile, preset, fine), 300)
+      }
+    } finally {
+      setRotating(false)
+    }
+  }
+
   const applyPreview = useCallback(async (file, presetId, fineParams) => {
     if (!file || !presetId) return
     setPreviewLoading(true)
@@ -81,10 +130,8 @@ export default function App() {
       fd.append('file', smallBlob, 'preview.jpg')
       fd.append('preset_id', presetId)
       Object.entries(fineParams).forEach(([k, v]) => fd.append(k, v))
-
       const res = await fetch(`${API_URL}/grade`, { method: 'POST', body: fd })
       if (!res.ok) throw new Error('Server error')
-
       const blob = await res.blob()
       setPreviewUrl(prev => { if (prev) URL.revokeObjectURL(prev); return URL.createObjectURL(blob) })
     } catch (err) {
@@ -94,35 +141,29 @@ export default function App() {
     }
   }, [])
 
-  // Debounce preview saat preset/fine tuning berubah
   useEffect(() => {
-    if (!originalFile || !preset) return
+    if (!rotatedFile || !preset) return
     setPreviewUrl(null)
     clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => applyPreview(originalFile, preset, fine), 300)
+    debounceRef.current = setTimeout(() => applyPreview(rotatedFile, preset, fine), 300)
     return () => clearTimeout(debounceRef.current)
-  }, [originalFile, preset, fine, applyPreview])
+  }, [rotatedFile, preset, fine, applyPreview])
 
-  // Download — proses resolusi penuh
   const handleDownload = useCallback(async () => {
-    if (!originalFile || !preset) return
+    if (!rotatedFile || !preset) return
     setDownloadLoading(true)
     try {
       const fd = new FormData()
-      fd.append('file', originalFile)
+      fd.append('file', rotatedFile)
       fd.append('preset_id', preset)
       Object.entries(fine).forEach(([k, v]) => fd.append(k, v))
-
       const res = await fetch(`${API_URL}/grade`, { method: 'POST', body: fd })
       if (!res.ok) throw new Error('Server error')
-
       const w = res.headers.get('X-Image-Width')
       const h = res.headers.get('X-Image-Height')
       if (w && h) setImgSize({ w, h })
-
       const blob = await res.blob()
       setResultBlob(blob)
-
       const a = document.createElement('a')
       a.href = URL.createObjectURL(blob)
       a.download = `retrolens_${preset}.jpg`
@@ -133,9 +174,8 @@ export default function App() {
     } finally {
       setDownloadLoading(false)
     }
-  }, [originalFile, preset, fine])
+  }, [rotatedFile, preset, fine])
 
-  // Touch/mouse drag untuk before/after slider
   const getSliderPos = (clientX) => {
     const rect = containerRef.current?.getBoundingClientRect()
     if (!rect) return
@@ -165,6 +205,7 @@ export default function App() {
   }
 
   const activePreset = PRESETS.find(p => p.id === preset)
+  const displayUrl   = rotatedUrl || originalUrl
 
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', position: 'relative' }}>
@@ -182,8 +223,7 @@ export default function App() {
         left: sidebarOpen ? 0 : -260,
         top: 0, bottom: 0, zIndex: 20,
         display: 'flex', flexDirection: 'column',
-        background: 'var(--bg2)',
-        borderRight: '0.5px solid var(--border)',
+        background: 'var(--bg2)', borderRight: '0.5px solid var(--border)',
         transition: 'left 0.3s ease', flexShrink: 0,
       }}>
         <div style={{ padding: '24px 20px', overflowY: 'auto', flex: 1 }}>
@@ -195,11 +235,9 @@ export default function App() {
           <FilmStrip />
           <div style={{ height: 1, background: 'var(--border)', margin: '16px 0' }} />
 
-          {/* Hint kalau belum pilih preset */}
           {originalFile && !preset && (
             <div style={{
-              background: 'rgba(201,169,122,0.08)',
-              border: '0.5px solid rgba(201,169,122,0.3)',
+              background: 'rgba(201,169,122,0.08)', border: '0.5px solid rgba(201,169,122,0.3)',
               borderRadius: 6, padding: '10px 12px', marginBottom: 12,
               fontSize: 12, color: 'var(--gold)', lineHeight: 1.5,
             }}>
@@ -221,7 +259,6 @@ export default function App() {
             </button>
           ))}
 
-          {/* Fine tuning — hanya tampil kalau sudah pilih preset */}
           {preset && (
             <>
               <div style={{ height: 1, background: 'var(--border)', margin: '16px 0' }} />
@@ -268,8 +305,28 @@ export default function App() {
             background: 'none', border: 'none', cursor: 'pointer',
             color: 'var(--gold-dim)', padding: 4, fontSize: 18, lineHeight: 1,
           }}>☰</button>
+
           <span style={{ fontFamily: 'Special Elite, cursive', color: 'var(--gold)', fontSize: 16, whiteSpace: 'nowrap' }}>RetroLens</span>
+
           <div style={{ flex: 1 }} />
+
+          {/* Rotate button — muncul kalau ada foto */}
+          {originalUrl && (
+            <button
+              onClick={handleRotate}
+              disabled={rotating}
+              title="Rotate 90°"
+              style={{
+                background: 'transparent', border: '0.5px solid var(--border)',
+                color: rotating ? 'var(--gold-dark)' : 'var(--gold-dim)',
+                padding: '6px 10px', borderRadius: 4, cursor: rotating ? 'not-allowed' : 'pointer',
+                fontSize: 15, lineHeight: 1, transition: 'all 0.15s',
+                transform: rotating ? 'rotate(90deg)' : 'rotate(0deg)',
+              }}
+            >
+              ↻
+            </button>
+          )}
 
           {previewLoading && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--gold-dim)', fontSize: 12 }}>
@@ -287,9 +344,7 @@ export default function App() {
               background: 'var(--gold)', color: 'var(--bg)', border: 'none',
               padding: '6px 14px', borderRadius: 4, cursor: 'pointer',
               fontSize: 12, fontWeight: 500, fontFamily: 'DM Sans, sans-serif', whiteSpace: 'nowrap',
-            }}>
-              {downloadLoading ? 'Processing...' : '⬇ Download'}
-            </button>
+            }}>⬇ Download</button>
           )}
 
           {downloadLoading && (
@@ -316,7 +371,6 @@ export default function App() {
         {/* Content */}
         <div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
           {!originalUrl ? (
-            // Drop zone
             <div
               onDragOver={e => { e.preventDefault(); setDragging(true) }}
               onDragLeave={() => setDragging(false)}
@@ -341,16 +395,14 @@ export default function App() {
             </div>
 
           ) : !preset ? (
-            // Foto sudah upload, belum pilih preset
             <div style={{ animation: 'fadeIn 0.4s ease' }}>
               <div style={{
                 position: 'relative', width: '100%', maxWidth: 900,
                 margin: '0 auto 16px', borderRadius: 6, overflow: 'hidden',
                 height: '70vh', background: 'var(--bg3)',
               }}>
-                <img src={originalUrl} alt="original" style={{
-                  width: '100%', height: '100%', objectFit: 'contain',
-                  filter: 'brightness(0.6)',
+                <img src={displayUrl} alt="original" style={{
+                  width: '100%', height: '100%', objectFit: 'contain', filter: 'brightness(0.6)',
                 }} />
                 <div style={{
                   position: 'absolute', inset: 0,
@@ -365,15 +417,12 @@ export default function App() {
                     background: 'var(--gold)', color: 'var(--bg)', border: 'none',
                     padding: '8px 20px', borderRadius: 4, cursor: 'pointer',
                     fontSize: 13, fontWeight: 500, fontFamily: 'DM Sans, sans-serif',
-                  }}>
-                    Buka Preset →
-                  </button>
+                  }}>Buka Preset →</button>
                 </div>
               </div>
             </div>
 
           ) : (
-            // Foto + preset sudah dipilih — tampilkan before/after
             <div style={{ animation: 'fadeIn 0.4s ease' }}>
               <div
                 ref={containerRef}
@@ -388,13 +437,11 @@ export default function App() {
                   touchAction: 'none', background: 'var(--bg3)',
                 }}
               >
-                {/* Original */}
-                <img src={originalUrl} alt="original" style={{
+                <img src={displayUrl} alt="original" style={{
                   position: 'absolute', inset: 0, width: '100%', height: '100%',
                   objectFit: 'contain', pointerEvents: 'none',
                 }} />
 
-                {/* Preview/result */}
                 {previewUrl && (
                   <img src={previewUrl} alt="graded" style={{
                     position: 'absolute', inset: 0, width: '100%', height: '100%',
@@ -404,7 +451,6 @@ export default function App() {
                   }} />
                 )}
 
-                {/* Loading overlay */}
                 {previewLoading && (
                   <div style={{
                     position: 'absolute', inset: 0,
@@ -421,7 +467,6 @@ export default function App() {
                   </div>
                 )}
 
-                {/* Divider */}
                 <div style={{
                   position: 'absolute', top: 0, bottom: 0,
                   left: `${sliderPos}%`, width: 2,
@@ -443,7 +488,6 @@ export default function App() {
                 <div style={{ position: 'absolute', top: 10, right: 12, fontSize: 11, letterSpacing: '0.1em', color: 'var(--gold)', textTransform: 'uppercase', pointerEvents: 'none' }}>{activePreset?.label}</div>
               </div>
 
-              {/* Info bar */}
               <div style={{
                 padding: '10px 14px', background: 'var(--bg2)',
                 border: '0.5px solid var(--border)', borderRadius: 6,
@@ -453,7 +497,7 @@ export default function App() {
                 <span style={{ fontSize: 12, color: 'var(--gold-dark)' }}>
                   {resultBlob
                     ? `📐 ${imgSize?.w}×${imgSize?.h}px · JPEG Q97 · Resolusi penuh`
-                    : '✦ Preview resolusi kecil — Download untuk hasil penuh'
+                    : '✦ Preview — Download untuk hasil full quality'
                   }
                 </span>
                 <span style={{ fontSize: 12, color: 'var(--gold)' }}>{activePreset?.label}</span>
