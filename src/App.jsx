@@ -9,6 +9,9 @@ const PRESETS = [
   { id: 'muted-street',    label: '🌫️ Muted Street',    desc: 'Desaturated abu-abu hangat — gaya dokumenter, editorial' },
   { id: 'night-neon',         label: '🌃 Night Neon',         desc: 'Shadow biru gelap, highlight cyan & magenta — vibe kota malam' },
   { id: 'golden-hour',     label: '🌅 Golden Hour',        desc: 'Warm orange highlight, shadow keemasan — magic hour feel' },
+  { id: 'warm-film-portrait', label: '🎞️ Warm Film Portrait', desc: 'Golden warm, skin glowing — gaya foto wisuda & portrait sore hari' },
+  { id: 'dreamy-soft-pink',   label: '🌸 Dreamy Soft Pink',   desc: 'Soft warm pink, highlight dreamy — feminine & elegant portrait' },
+  { id: 'airy-vintage',       label: '☁️ Airy Vintage',        desc: 'Overexposed warm cream, highlight blown — ringan & airy' },
 ]
 
 const DEFAULT_FINE = { exposure: 0, contrast: 0, saturation: 0, fade: 0, warm: 0, grain: 0, vignette: 0 }
