@@ -5,9 +5,9 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 const PRESETS = [
   { id: 'cinematic-green', label: '🌿 Cinematic Green', desc: 'Shadow hijau tua gelap, highlight natural — moody & dramatis' },
   { id: 'edwak-445',       label: '🏙️ Edwak #445',      desc: 'Teal shadow + copper midtone — street photography sinematik' },
-  { id: 'flomo-green',     label: '🎞️ FLOMO Green',     desc: 'Green cast kuat seluruh foto — efek film expired' },
+  { id: 'film-grain-vintage', label: '📽️ Film Grain Vintage', desc: 'Tekstur grain kuat, faded warm — gaya foto analog 70an' },
   { id: 'muted-street',    label: '🌫️ Muted Street',    desc: 'Desaturated abu-abu hangat — gaya dokumenter, editorial' },
-  { id: 'edwak-440',       label: '🎬 Edwak #440',      desc: 'Teal shadow + orange highlight — dark moody sinematik' },
+  { id: 'night-neon',         label: '🌃 Night Neon',         desc: 'Shadow biru gelap, highlight cyan & magenta — vibe kota malam' },
   { id: 'golden-hour',     label: '🌅 Golden Hour',        desc: 'Warm orange highlight, shadow keemasan — magic hour feel' },
 ]
 
