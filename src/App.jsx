@@ -230,6 +230,17 @@ export default function App() {
   const displayUrl     = rotatedUrl || originalUrl
   const hasFineChanges = Object.values(fine).some(v => v !== 0)
 
+  // Floating action button style
+  const fabStyle = {
+    width: 34, height: 34, borderRadius: 6,
+    background: 'rgba(0,0,0,0.55)',
+    backdropFilter: 'blur(6px)',
+    border: '0.5px solid rgba(255,255,255,0.15)',
+    color: 'white', fontSize: 16, cursor: 'pointer',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    transition: 'background 0.15s',
+  }
+
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', position: 'relative' }}>
 
@@ -264,19 +275,12 @@ export default function App() {
         background: 'var(--bg2)', borderRight: '0.5px solid var(--border)',
         transition: 'left 0.3s ease', flexShrink: 0,
       }}>
-
-        {/* Sidebar header — fixed, tidak ikut scroll */}
-        <div style={{
-          padding: '20px 20px 14px',
-          borderBottom: '0.5px solid var(--border)',
-          flexShrink: 0,
-        }}>
+        <div style={{ padding: '20px 20px 14px', borderBottom: '0.5px solid var(--border)', flexShrink: 0 }}>
           <div style={{ fontFamily: 'Special Elite, cursive', fontSize: 22, color: 'var(--gold)', marginBottom: 2 }}>RetroLens</div>
           <div style={{ fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--gold-dark)' }}>Cinematic Grading</div>
           <FilmStrip />
         </div>
 
-        {/* Scrollable area */}
         <div style={{ overflowY: 'auto', flex: 1, padding: '14px 20px' }}>
 
           {originalFile && !preset && (
@@ -291,7 +295,6 @@ export default function App() {
             </div>
           )}
 
-          {/* Section label */}
           <div style={{
             fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase',
             color: 'var(--gold-dim)', marginBottom: 10,
@@ -311,7 +314,6 @@ export default function App() {
               transition: 'all 0.15s', fontFamily: 'DM Sans, sans-serif',
               display: 'flex', alignItems: 'flex-start', gap: 10,
             }}>
-              {/* Color dot — lebih reliable daripada emoji */}
               <div style={{
                 width: 9, height: 9, borderRadius: '50%', flexShrink: 0, marginTop: 4,
                 background: preset === p.id ? PRESET_COLORS[p.id] : 'rgba(201,169,122,0.18)',
@@ -328,7 +330,6 @@ export default function App() {
             </button>
           ))}
 
-          {/* Fine Tuning */}
           {preset && (
             <>
               <div style={{ height: 1, background: 'var(--border)', margin: '14px 0' }} />
@@ -341,7 +342,6 @@ export default function App() {
                   }}>Reset</button>
                 )}
               </div>
-
               {SLIDERS.map(s => (
                 <div key={s.key} style={{ marginBottom: 14 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
@@ -368,7 +368,7 @@ export default function App() {
       {/* MAIN */}
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg)', minWidth: 0 }}>
 
-        {/* Topbar */}
+        {/* Topbar — bersih, hanya logo + preset badge + upload */}
         <header style={{
           display: 'flex', alignItems: 'center', gap: 8,
           padding: '0 12px', height: 52,
@@ -382,7 +382,6 @@ export default function App() {
 
           <span style={{ fontFamily: 'Special Elite, cursive', color: 'var(--gold)', fontSize: 16, whiteSpace: 'nowrap' }}>RetroLens</span>
 
-          {/* Active preset badge */}
           {activePreset && (
             <div style={{
               display: 'flex', alignItems: 'center', gap: 6,
@@ -397,54 +396,17 @@ export default function App() {
 
           <div style={{ flex: 1 }} />
 
-          {originalUrl && (
-            <button onClick={handleRotate} disabled={rotating} title="Rotate 90°" style={{
-              background: 'transparent', border: '0.5px solid var(--border)',
-              color: rotating ? 'var(--gold-dark)' : 'var(--gold-dim)',
-              padding: '6px 10px', borderRadius: 4,
-              cursor: rotating ? 'not-allowed' : 'pointer',
-              fontSize: 15, lineHeight: 1, transition: 'transform 0.2s',
-              transform: rotating ? 'rotate(90deg)' : 'rotate(0deg)',
-            }}>↻</button>
-          )}
-
-          {previewLoading && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--gold-dim)', fontSize: 12 }}>
-              <Spinner size={12} />
-              Preview...
-            </div>
-          )}
-
-        {previewUrl && !previewLoading && !downloadLoading && (
-          <button onClick={handleDownload} style={{
-            background: 'var(--gold)', color: 'var(--bg)', border: 'none',
-            padding: '6px 16px', borderRadius: 4, cursor: 'pointer',
-            fontSize: 12, fontWeight: 500, fontFamily: 'DM Sans, sans-serif', whiteSpace: 'nowrap',
-          }}>⬇ Download</button>
-        )}
-        
-        <button onClick={() => fileInputRef.current?.click()} style={{
-          background: 'transparent', color: 'var(--gold)',
-          border: '0.5px solid rgba(201,169,122,0.4)',
-          padding: '6px 10px', borderRadius: 4, cursor: 'pointer',
-          fontSize: 12, fontFamily: 'DM Sans, sans-serif', whiteSpace: 'nowrap',
-        }}>
-          {originalUrl ? '↑' : 'Upload'}
-        </button>
-
-          {downloadLoading && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--gold)', fontSize: 12 }}>
-              <Spinner size={12} color="var(--gold)" />
-              Rendering...
-            </div>
-          )}
-
+          {/* Upload — selalu ada */}
           <button onClick={() => fileInputRef.current?.click()} style={{
-            background: 'transparent', color: 'var(--gold)',
+            background: originalUrl ? 'transparent' : 'var(--gold)',
+            color: originalUrl ? 'var(--gold)' : 'var(--bg)',
             border: '0.5px solid rgba(201,169,122,0.4)',
-            padding: '6px 12px', borderRadius: 4, cursor: 'pointer',
+            padding: '6px 14px', borderRadius: 4, cursor: 'pointer',
             fontSize: 12, fontFamily: 'DM Sans, sans-serif', whiteSpace: 'nowrap',
-          }}>Upload</button>
+            fontWeight: originalUrl ? 400 : 500,
+          }}>
+            {originalUrl ? '↑ Ganti Foto' : 'Upload Foto'}
+          </button>
           <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }}
             onChange={e => handleFile(e.target.files[0])} />
         </header>
@@ -498,10 +460,19 @@ export default function App() {
                   width: '100%', height: '100%', objectFit: 'contain',
                   filter: 'brightness(0.5) saturate(0.4)',
                 }} />
+
+                {/* Floating rotate di pojok kanan atas */}
+                <div style={{ position: 'absolute', top: 10, right: 10, display: 'flex', gap: 6, zIndex: 5 }}>
+                  <button onClick={handleRotate} disabled={rotating} style={fabStyle} title="Rotate 90°">
+                    {rotating ? <Spinner size={14} /> : '↻'}
+                  </button>
+                </div>
+
                 <div style={{
                   position: 'absolute', inset: 0,
                   display: 'flex', flexDirection: 'column',
                   alignItems: 'center', justifyContent: 'center', gap: 12,
+                  pointerEvents: 'none',
                 }}>
                   <div style={{ color: 'var(--gold)', fontFamily: 'Special Elite, cursive', fontSize: 20 }}>
                     Pilih preset color grading
@@ -511,6 +482,7 @@ export default function App() {
                     background: 'var(--gold)', color: 'var(--bg)', border: 'none',
                     padding: '9px 22px', borderRadius: 4, cursor: 'pointer',
                     fontSize: 13, fontWeight: 500, fontFamily: 'DM Sans, sans-serif', marginTop: 4,
+                    pointerEvents: 'auto',
                   }}>Buka Preset →</button>
                 </div>
               </div>
@@ -582,15 +554,53 @@ export default function App() {
                   textTransform: 'uppercase', pointerEvents: 'none',
                   background: 'rgba(0,0,0,0.35)', padding: '3px 8px', borderRadius: 4,
                 }}>Original</div>
+
                 <div style={{
-                  position: 'absolute', top: 10, right: 10, fontSize: 10,
-                  letterSpacing: '0.1em', color: 'var(--gold)',
-                  textTransform: 'uppercase', pointerEvents: 'none',
-                  background: 'rgba(0,0,0,0.35)', padding: '3px 8px', borderRadius: 4,
-                  display: 'flex', alignItems: 'center', gap: 5,
+                  position: 'absolute', top: 10, right: 10,
+                  display: 'flex', gap: 6, zIndex: 5,
+                  pointerEvents: 'auto',
                 }}>
-                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: PRESET_COLORS[preset] }} />
-                  {activePreset?.label}
+                  {/* Preset label */}
+                  <div style={{
+                    fontSize: 10, letterSpacing: '0.1em', color: 'var(--gold)',
+                    textTransform: 'uppercase',
+                    background: 'rgba(0,0,0,0.35)', padding: '3px 8px', borderRadius: 4,
+                    display: 'flex', alignItems: 'center', gap: 5,
+                    height: 34,
+                  }}>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: PRESET_COLORS[preset] }} />
+                    {activePreset?.label}
+                  </div>
+
+                  {/* Rotate button */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleRotate() }}
+                    disabled={rotating}
+                    style={fabStyle}
+                    title="Rotate 90°"
+                  >
+                    {rotating ? <Spinner size={14} /> : '↻'}
+                  </button>
+
+                  {/* Download button */}
+                  {!downloadLoading ? (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDownload() }}
+                      disabled={!previewUrl}
+                      style={{
+                        ...fabStyle,
+                        opacity: previewUrl ? 1 : 0.4,
+                        cursor: previewUrl ? 'pointer' : 'not-allowed',
+                      }}
+                      title="Download full quality"
+                    >
+                      ⬇
+                    </button>
+                  ) : (
+                    <div style={{ ...fabStyle, cursor: 'default' }}>
+                      <Spinner size={14} />
+                    </div>
+                  )}
                 </div>
 
                 {/* Drag hint */}
@@ -600,7 +610,7 @@ export default function App() {
                     fontSize: 11, color: 'rgba(201,169,122,0.55)',
                     background: 'rgba(0,0,0,0.4)', padding: '4px 14px', borderRadius: 20,
                     pointerEvents: 'none', whiteSpace: 'nowrap',
-                  }}>← geser untuk compare →</div>
+                  }}>geser untuk compare</div>
                 )}
               </div>
 
