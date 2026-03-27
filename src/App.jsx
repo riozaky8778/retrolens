@@ -8,6 +8,7 @@ const PRESETS = [
   { id: 'flomo-green',     label: '🎞️ FLOMO Green',     desc: 'Green cast kuat seluruh foto — efek film expired' },
   { id: 'muted-street',    label: '🌫️ Muted Street',    desc: 'Desaturated abu-abu hangat — gaya dokumenter, editorial' },
   { id: 'edwak-440',       label: '🎬 Edwak #440',      desc: 'Teal shadow + orange highlight — dark moody sinematik' },
+  { id: 'golden-hour',     label: '🌅 Golden Hour',        desc: 'Warm orange highlight, shadow keemasan — magic hour feel' },
 ]
 
 const DEFAULT_FINE = { exposure: 0, contrast: 0, saturation: 0, fade: 0, warm: 0, grain: 0, vignette: 0 }
