@@ -87,6 +87,7 @@ export default function App() {
   const [fine, setFine]                       = useState(DEFAULT_FINE)
   const [previewLoading, setPreviewLoading]   = useState(false)
   const [downloadLoading, setDownloadLoading] = useState(false)
+  const [sharing, setSharing]                 = useState(false)
   const [rotating, setRotating]               = useState(false)
   const [imgSize, setImgSize]                 = useState(null)
   const [dragging, setDragging]               = useState(false)
@@ -198,6 +199,31 @@ export default function App() {
     }
   }, [rotatedFile, preset, fine])
 
+  const handleShare = useCallback(async () => {
+    if (!rotatedFile || !preset || sharing) return
+    setSharing(true)
+    showToast('Menyiapkan foto...', 'info')
+    try {
+      const fd = new FormData()
+      fd.append('file', rotatedFile)
+      fd.append('preset_id', preset)
+      Object.entries(fine).forEach(([k, v]) => fd.append(k, v))
+      const res = await fetch(`${API_URL}/grade`, { method: 'POST', body: fd })
+      if (!res.ok) throw new Error('Server error')
+      const blob = await res.blob()
+      const file = new File([blob], `retrolens_${preset}.jpg`, { type: 'image/jpeg' })
+      await navigator.share({
+        title: 'RetroLens',
+        text: `Foto ini diedit pakai RetroLens — ${activePreset?.label} | retrolens-six.vercel.app`,
+        files: [file],
+      })
+    } catch (err) {
+      if (err.name !== 'AbortError') showToast('Share gagal. Coba download dulu.', 'error')
+    } finally {
+      setSharing(false)
+    }
+  }, [rotatedFile, preset, fine, activePreset])
+
   const getSliderPos = (clientX) => {
     const rect = containerRef.current?.getBoundingClientRect()
     if (!rect) return
@@ -229,8 +255,8 @@ export default function App() {
   const activePreset   = PRESETS.find(p => p.id === preset)
   const displayUrl     = rotatedUrl || originalUrl
   const hasFineChanges = Object.values(fine).some(v => v !== 0)
+  const canShare       = typeof navigator !== 'undefined' && !!navigator.share
 
-  // Floating action button style
   const fabStyle = {
     width: 34, height: 34, borderRadius: 6,
     background: 'rgba(0,0,0,0.55)',
@@ -244,7 +270,6 @@ export default function App() {
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', position: 'relative' }}>
 
-      {/* Toast */}
       {toast && (
         <div style={{
           position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
@@ -258,7 +283,6 @@ export default function App() {
         }}>{toast.msg}</div>
       )}
 
-      {/* Mobile overlay */}
       {sidebarOpen && isMobile() && (
         <div onClick={() => setSidebarOpen(false)} style={{
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 10,
@@ -368,7 +392,6 @@ export default function App() {
       {/* MAIN */}
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg)', minWidth: 0 }}>
 
-        {/* Topbar — bersih, hanya logo + preset badge + upload */}
         <header style={{
           display: 'flex', alignItems: 'center', gap: 8,
           padding: '0 12px', height: 52,
@@ -396,7 +419,6 @@ export default function App() {
 
           <div style={{ flex: 1 }} />
 
-          {/* Upload — selalu ada */}
           <button onClick={() => fileInputRef.current?.click()} style={{
             background: originalUrl ? 'transparent' : 'var(--gold)',
             color: originalUrl ? 'var(--gold)' : 'var(--bg)',
@@ -411,7 +433,6 @@ export default function App() {
             onChange={e => handleFile(e.target.files[0])} />
         </header>
 
-        {/* Content */}
         <div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
 
           {!originalUrl ? (
@@ -460,14 +481,11 @@ export default function App() {
                   width: '100%', height: '100%', objectFit: 'contain',
                   filter: 'brightness(0.5) saturate(0.4)',
                 }} />
-
-                {/* Floating rotate di pojok kanan atas */}
                 <div style={{ position: 'absolute', top: 10, right: 10, display: 'flex', gap: 6, zIndex: 5 }}>
                   <button onClick={handleRotate} disabled={rotating} style={fabStyle} title="Rotate 90°">
                     {rotating ? <Spinner size={14} /> : '↻'}
                   </button>
                 </div>
-
                 <div style={{
                   position: 'absolute', inset: 0,
                   display: 'flex', flexDirection: 'column',
@@ -547,7 +565,7 @@ export default function App() {
                   }}>⇔</div>
                 </div>
 
-                {/* Corner labels */}
+                {/* Corner label kiri */}
                 <div style={{
                   position: 'absolute', top: 10, left: 10, fontSize: 10,
                   letterSpacing: '0.1em', color: 'rgba(232,213,183,0.6)',
@@ -555,6 +573,7 @@ export default function App() {
                   background: 'rgba(0,0,0,0.35)', padding: '3px 8px', borderRadius: 4,
                 }}>Original</div>
 
+                {/* Floating buttons kanan atas */}
                 <div style={{
                   position: 'absolute', top: 10, right: 10,
                   display: 'flex', gap: 6, zIndex: 5,
@@ -565,33 +584,23 @@ export default function App() {
                     fontSize: 10, letterSpacing: '0.1em', color: 'var(--gold)',
                     textTransform: 'uppercase',
                     background: 'rgba(0,0,0,0.35)', padding: '3px 8px', borderRadius: 4,
-                    display: 'flex', alignItems: 'center', gap: 5,
-                    height: 34,
+                    display: 'flex', alignItems: 'center', gap: 5, height: 34,
                   }}>
                     <div style={{ width: 6, height: 6, borderRadius: '50%', background: PRESET_COLORS[preset] }} />
                     {activePreset?.label}
                   </div>
 
-                  {/* Rotate button */}
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleRotate() }}
-                    disabled={rotating}
-                    style={fabStyle}
-                    title="Rotate 90°"
-                  >
+                  {/* Rotate */}
+                  <button onClick={(e) => { e.stopPropagation(); handleRotate() }} disabled={rotating} style={fabStyle} title="Rotate 90°">
                     {rotating ? <Spinner size={14} /> : '↻'}
                   </button>
 
-                  {/* Download button */}
+                  {/* Download */}
                   {!downloadLoading ? (
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDownload() }}
                       disabled={!previewUrl}
-                      style={{
-                        ...fabStyle,
-                        opacity: previewUrl ? 1 : 0.4,
-                        cursor: previewUrl ? 'pointer' : 'not-allowed',
-                      }}
+                      style={{ ...fabStyle, opacity: previewUrl ? 1 : 0.4, cursor: previewUrl ? 'pointer' : 'not-allowed' }}
                       title="Download full quality"
                     >
                       ⬇
@@ -600,6 +609,23 @@ export default function App() {
                     <div style={{ ...fabStyle, cursor: 'default' }}>
                       <Spinner size={14} />
                     </div>
+                  )}
+
+                  {/* Share — hanya muncul di HP yang support Web Share API */}
+                  {canShare && previewUrl && (
+                    !sharing ? (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleShare() }}
+                        style={fabStyle}
+                        title="Share ke Instagram/WhatsApp"
+                      >
+                        ↗
+                      </button>
+                    ) : (
+                      <div style={{ ...fabStyle, cursor: 'default' }}>
+                        <Spinner size={14} />
+                      </div>
+                    )
                   )}
                 </div>
 
