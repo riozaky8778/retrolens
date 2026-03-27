@@ -100,6 +100,23 @@ export default function App() {
   const debounceRef    = useRef()
   const toastRef       = useRef()
 
+  // ✅ DIPINDAH KE ATAS — harus sebelum handleShare
+  const activePreset   = PRESETS.find(p => p.id === preset)
+  const displayUrl     = rotatedUrl || originalUrl
+  const hasFineChanges = Object.values(fine).some(v => v !== 0)
+  const canShare       = typeof navigator !== 'undefined' && !!navigator.share
+
+  const fabStyle = {
+    width: 34, height: 34, borderRadius: 6,
+    background: 'rgba(0,0,0,0.55)',
+    WebkitBackdropFilter: 'blur(6px)',
+    backdropFilter: 'blur(6px)',
+    border: '0.5px solid rgba(255,255,255,0.15)',
+    color: 'white', fontSize: 16, cursor: 'pointer',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    transition: 'background 0.15s',
+  }
+
   const showToast = (msg, type = 'info') => {
     setToast({ msg, type })
     clearTimeout(toastRef.current)
@@ -199,6 +216,7 @@ export default function App() {
     }
   }, [rotatedFile, preset, fine])
 
+  // ✅ activePreset sudah tersedia di atas, aman dipakai di sini
   const handleShare = useCallback(async () => {
     if (!rotatedFile || !preset || sharing) return
     setSharing(true)
@@ -250,21 +268,6 @@ export default function App() {
     setDragging(false)
     const file = e.dataTransfer.files[0]
     if (file && file.type.startsWith('image/')) handleFile(file)
-  }
-
-  const activePreset   = PRESETS.find(p => p.id === preset)
-  const displayUrl     = rotatedUrl || originalUrl
-  const hasFineChanges = Object.values(fine).some(v => v !== 0)
-  const canShare       = typeof navigator !== 'undefined' && !!navigator.share
-
-  const fabStyle = {
-    width: 34, height: 34, borderRadius: 6,
-    background: 'rgba(0,0,0,0.55)',
-    backdropFilter: 'blur(6px)',
-    border: '0.5px solid rgba(255,255,255,0.15)',
-    color: 'white', fontSize: 16, cursor: 'pointer',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    transition: 'background 0.15s',
   }
 
   return (
@@ -602,9 +605,7 @@ export default function App() {
                       disabled={!previewUrl}
                       style={{ ...fabStyle, opacity: previewUrl ? 1 : 0.4, cursor: previewUrl ? 'pointer' : 'not-allowed' }}
                       title="Download full quality"
-                    >
-                      ⬇
-                    </button>
+                    >⬇</button>
                   ) : (
                     <div style={{ ...fabStyle, cursor: 'default' }}>
                       <Spinner size={14} />
@@ -618,9 +619,7 @@ export default function App() {
                         onClick={(e) => { e.stopPropagation(); handleShare() }}
                         style={fabStyle}
                         title="Share ke Instagram/WhatsApp"
-                      >
-                        ↗
-                      </button>
+                      >↗</button>
                     ) : (
                       <div style={{ ...fabStyle, cursor: 'default' }}>
                         <Spinner size={14} />
